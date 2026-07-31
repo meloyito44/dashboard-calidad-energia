@@ -956,7 +956,7 @@ function buildHistoricalDiagnosis(){
   // Tendencia: primera mitad del historial vs. segunda mitad (orden cronológico de registro)
   let trendText;
   if(total < 4){
-    trendText = 'El historial tiene muy pocas lecturas todavía para establecer una tendencia confiable.';
+    trendText = 'Todavía hay muy pocas lecturas registradas (menos de 4) para saber si la situación está mejorando o empeorando con el tiempo.';
   } else {
     const half = Math.floor(total/2);
     const firstHalf = history.slice(0, half);
@@ -964,22 +964,34 @@ function buildHistoricalDiagnosis(){
     const highRate = arr => arr.length ? (arr.filter(h=>h.cls==='high').length/arr.length*100) : 0;
     const r1 = highRate(firstHalf), r2 = highRate(secondHalf);
     if(r2 - r1 > 5){
-      trendText = `La proporción de lecturas ALTAS subió de ${r1.toFixed(1)}% (primera mitad del historial) a ${r2.toFixed(1)}% (segunda mitad) — tendencia al alza que conviene vigilar.`;
+      trendText = `La situación está empeorando: al inicio del historial, <b>${r1.toFixed(1)}%</b> de las lecturas eran ALTAS; en la parte más reciente, esa proporción subió a <b>${r2.toFixed(1)}%</b>. Conviene prestar atención.`;
     } else if(r1 - r2 > 5){
-      trendText = `La proporción de lecturas ALTAS bajó de ${r1.toFixed(1)}% (primera mitad del historial) a ${r2.toFixed(1)}% (segunda mitad) — tendencia a la baja, favorable.`;
+      trendText = `La situación está mejorando: al inicio del historial, <b>${r1.toFixed(1)}%</b> de las lecturas eran ALTAS; en la parte más reciente, esa proporción bajó a <b>${r2.toFixed(1)}%</b>.`;
     } else {
-      trendText = 'La proporción de lecturas ALTAS se mantuvo relativamente estable a lo largo del historial, sin una tendencia clara al alza ni a la baja.';
+      trendText = 'La situación se ha mantenido estable: no hay una mejora ni un deterioro claro entre el inicio y la parte más reciente del historial.';
     }
   }
 
-  let verdict, verdictColor;
+  let verdict, verdictColor, verdictMeaning;
   const highPct = parseFloat(pctHigh), mediumPct = parseFloat(pctMedium);
-  if(highPct >= 20){ verdict = 'REQUIERE ATENCIÓN'; verdictColor = '#F0523E'; }
-  else if(highPct > 0 || mediumPct >= 30){ verdict = 'VIGILANCIA RECOMENDADA'; verdictColor = '#F5A623'; }
-  else { verdict = 'ESTABLE'; verdictColor = '#2ECC71'; }
+  if(highPct >= 20){
+    verdict = 'REQUIERE ATENCIÓN';
+    verdictColor = '#F0523E';
+    verdictMeaning = 'Una parte considerable de las lecturas históricas llegó al nivel más alto de consumo. Se recomienda revisar la instalación.';
+  } else if(highPct > 0 || mediumPct >= 30){
+    verdict = 'VIGILANCIA RECOMENDADA';
+    verdictColor = '#F5A623';
+    verdictMeaning = 'No hay un problema crítico constante, pero suficientes lecturas se ubicaron en nivel medio (o alguna en alto) como para justificar seguimiento cercano.';
+  } else {
+    verdict = 'ESTABLE';
+    verdictColor = '#2ECC71';
+    verdictMeaning = 'El sistema se mantuvo en consumo normal durante casi todo el periodo evaluado. No se requiere ninguna acción.';
+  }
 
-  const diagnosisText = `A lo largo de <b>${total}</b> lecturas evaluadas, el árbol de decisión clasificó ${counts.low} como <b>bajo</b> (${pctLow}%), ${counts.medium} como <b>medio</b> (${pctMedium}%) y ${counts.high} como <b>alto</b> (${pctHigh}%).` +
-    (topFeatures.length ? ` Las variables que con más frecuencia determinaron estas clasificaciones fueron: ${topFeatures.join(', ')}.` : '');
+  const dominante = counts.high >= counts.medium && counts.high >= counts.low ? 'alto'
+    : counts.medium >= counts.low ? 'medio' : 'bajo';
+  const diagnosisText = `De las <b>${total}</b> lecturas evaluadas en esta sesión, la mayoría se clasificó como <b>${dominante}</b>. En detalle: ${counts.low} lecturas en bajo (${pctLow}%), ${counts.medium} en medio (${pctMedium}%) y ${counts.high} en alto (${pctHigh}%).` +
+    (topFeatures.length ? ` Las variables que el árbol evaluó con más frecuencia a lo largo de todo el historial fueron: ${topFeatures.join(', ')}.` : '');
 
   // Calidad de energía agregada: mismas fórmulas que buildPowerQualityDiagnosis(),
   // aplicadas a cada lectura del historial en vez de solo a la actual.
@@ -1010,18 +1022,18 @@ function buildHistoricalDiagnosis(){
   let pqVerdict, pqColor, pqText;
   if(vImb.length===0 && cImb.length===0 && fps.length===0){
     pqVerdict = 'SIN DATOS SUFICIENTES'; pqColor = '#8C9AB5';
-    pqText = 'El historial no incluye las variables necesarias (voltaje trifásico, corriente trifásica o factor de potencia) para evaluar la calidad de energía de forma agregada.';
+    pqText = 'No fue posible evaluar la calidad de energía del historial porque el archivo no incluye las variables necesarias: voltaje trifásico, corriente trifásica o factor de potencia.';
   } else if(pqIssues > 0){
-    pqVerdict = 'DEFICIENTE EN ALGUNAS LECTURAS'; pqColor = '#F0523E';
-    pqText = `Se detectaron ${pqIssues} casos fuera de rango (sumando los 3 índices) a lo largo de las ${total} lecturas evaluadas.`;
+    pqVerdict = 'DEFICIENTE EN ALGUNOS MOMENTOS'; pqColor = '#F0523E';
+    pqText = `De las ${total} lecturas del historial, <b>${pqIssues}</b> tuvieron al menos un valor fuera del rango recomendado (en voltaje, corriente o factor de potencia). Conviene identificar esos momentos puntuales y revisarlos.`;
   } else {
     pqVerdict = 'BUENA EN TODO EL HISTORIAL'; pqColor = '#2ECC71';
-    pqText = `Ninguna de las ${total} lecturas registradas superó los límites recomendados de desequilibrio de voltaje, corriente o factor de potencia.`;
+    pqText = `Ninguna de las ${total} lecturas del historial se salió de los rangos recomendados de voltaje, corriente o factor de potencia — la calidad de energía se mantuvo buena durante todo el periodo evaluado.`;
   }
 
   return {
     available: true, total, counts, pctLow, pctMedium, pctHigh, topFeatures, trendText,
-    verdict, verdictColor, diagnosisText,
+    verdict, verdictColor, verdictMeaning, diagnosisText,
     pq: {verdict: pqVerdict, color: pqColor, text: pqText}
   };
 }
@@ -1479,11 +1491,12 @@ function generateHistoricalReportText(){
   lines.push(`Distribución: Bajo ${d.counts.low} (${d.pctLow}%) · Medio ${d.counts.medium} (${d.pctMedium}%) · Alto ${d.counts.high} (${d.pctHigh}%)`);
   lines.push('');
   lines.push('Veredicto general: ' + d.verdict);
+  lines.push(d.verdictMeaning);
   lines.push(d.diagnosisText.replace(/<\/?b>/g,''));
   lines.push('');
-  lines.push('Tendencia: ' + d.trendText);
+  lines.push('Tendencia: ' + d.trendText.replace(/<\/?b>/g,''));
   lines.push('');
-  lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text);
+  lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text.replace(/<\/?b>/g,''));
   return lines.join('\n');
 }
 
@@ -1534,11 +1547,15 @@ document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
   }
   const body = `
     <h4>Veredicto general del historial</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿Qué tan bien se ha comportado el sistema en todas las lecturas evaluadas hasta ahora?</p>
     <p style="font-size:17px; font-weight:700; color:${d.verdictColor};">${d.verdict}</p>
+    <p>${d.verdictMeaning}</p>
     <p>${d.diagnosisText}</p>
     <h4>Tendencia</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿La situación está mejorando o empeorando con el tiempo?</p>
     <p>${d.trendText}</p>
     <h4>Calidad de energía agregada</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Voltaje, corriente y factor de potencia, evaluados en conjunto para todas las lecturas del historial.</p>
     <p>Veredicto: <b style="color:${d.pq.color}">${d.pq.verdict}</b> — ${d.pq.text}</p>
     <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">Este diagnóstico resume las ${d.total} lecturas ya evaluadas en esta sesión (sliders y/o archivo subido), a diferencia de "Generar diagnóstico" y "Diagnóstico de calidad de energía", que solo describen la lectura actual.</p>
   `;
