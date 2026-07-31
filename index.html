@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Inteligente — Calidad de Energía</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#0B1220;
+    --panel:#121B2E;
+    --panel-2:#182238;
+    --line:#26324A;
+    --ink:#E7ECF5;
+    --ink-dim:#8C9AB5;
+    --accent:#37B6E8;
+    --green:#2ECC71;
+    --amber:#F5A623;
+    --red:#F0523E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% -10%, rgba(55,182,232,0.08), transparent 45%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    padding:24px;
+    min-height:100vh;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .shell{ display:flex; max-width:1500px; margin:0 auto; align-items:flex-start; gap:20px; }
+  .wrap{ flex:1; min-width:0; }
+
+  /* ---- sidebar ---- */
+  .sidebar{
+    width:216px; flex-shrink:0; position:sticky; top:24px;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px 14px; display:flex; flex-direction:column; gap:2px;
+  }
+  .brand{ display:flex; align-items:center; gap:9px; padding:2px 6px 16px 6px; border-bottom:1px solid var(--line); margin-bottom:12px; }
+  .brand .bolt{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent), #6C5CE7);
+    display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .brand .name{ font-size:12.5px; font-weight:700; line-height:1.25; }
+  .brand .name span{ display:block; font-size:9.5px; font-weight:600; color:var(--ink-dim); letter-spacing:.08em; }
+  .navlink{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:var(--ink-dim);
+    text-decoration:none; font-size:12.5px; font-weight:600; transition:all .15s ease; }
+  .navlink .ico{ font-size:13px; width:16px; text-align:center; }
+  .navlink:hover{ background:var(--panel-2); color:var(--ink); }
+  .navlink.active{ background:#173049; color:var(--accent); }
+  .sidebar-foot{ margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:10.5px; color:#5B6A87; line-height:1.6; }
+
+  /* ---- KPI strip ---- */
+  .kpi-strip{ display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:16px; }
+  .kpi-card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 15px; }
+  .kpi-label{ font-size:10.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .kpi-value{ font-family:'IBM Plex Mono', monospace; font-size:19px; font-weight:600; margin-top:5px; color:var(--ink); }
+  .kpi-sub{ font-size:10.5px; color:#5B6A87; margin-top:2px; }
+
+  /* ---- path visualization (signature element) ---- */
+  .path-viz{ display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:6px 2px 10px 2px; }
+  .path-node{ flex-shrink:0; min-width:150px; border-radius:10px; padding:10px 12px; margin-right:22px; position:relative; border:1px solid var(--line); background:var(--panel-2); }
+  .path-node.root{ border-color:#6C5CE7; box-shadow:0 0 0 1px #6C5CE733; }
+  /* ---- quality index cards ---- */
+  .idx-value{ font-family:'IBM Plex Mono', monospace; font-size:26px; font-weight:700; margin-bottom:10px; }
+  .idx-bar-track{ height:8px; border-radius:5px; background:#1B2338; overflow:hidden; }
+  .idx-bar-fill{ height:100%; border-radius:5px; transition:width .4s ease, background .3s ease; }
+  .idx-note{ font-size:11px; color:var(--ink-dim); margin-top:9px; line-height:1.5; }
+  .path-node::after{ content:'→'; position:absolute; right:-20px; top:50%; transform:translateY(-50%); color:#4C5A78; font-size:15px; font-weight:700; }
+  .path-node:last-child{ margin-right:0; }
+  .path-node:last-child::after{ content:''; }
+  .path-node .pn-eyebrow{ font-size:9px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-dim); font-weight:700; margin-bottom:5px; }
+  .path-node .pn-feat{ font-size:11.5px; font-weight:600; color:var(--ink); line-height:1.3; }
+  .path-node .pn-cond{ font-family:'IBM Plex Mono', monospace; font-size:11px; margin-top:5px; color:var(--accent); }
+  .path-node.leaf .pn-cond{ font-size:13px; font-weight:700; }
+
+  .statusbar{
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:16px 22px; margin-bottom:16px;
+  }
+  .semaforo{ width:20px; height:20px; border-radius:50%; flex-shrink:0;
+    box-shadow: 0 0 0 6px var(--dot-ring, transparent), 0 0 18px 2px var(--dot-glow, transparent);
+    transition: all .5s ease; }
+  .statusbar .status-text{ font-size:17px; font-weight:600; }
+  .statusbar .status-sub{ color:var(--ink-dim); font-size:13px; margin-top:2px; }
+  .statusbar .meta{ margin-left:auto; text-align:right; color:var(--ink-dim); font-size:12.5px; line-height:1.5; }
+  .meta b{ color:var(--ink); font-weight:600; }
+
+  .demo-select{ display:flex; gap:6px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:4px; }
+  .demo-select button{ all:unset; cursor:pointer; padding:7px 13px; font-size:12.5px; font-weight:600;
+    border-radius:7px; color:var(--ink-dim); transition:all .2s ease; }
+  .demo-select button.active{ background:var(--accent); color:#06202E; }
+  .demo-select button:not(.active):hover{ color:var(--ink); background:#1e2b45; }
+
+  .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; margin-bottom:16px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+
+  /* ---- upload historico ---- */
+  .upload-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 20px;
+    margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .upload-card h3{ margin:0 0 4px 0; font-size:14px; }
+  .upload-card .footnote{ margin:0; max-width:520px; }
+  .upload-btn{ all:unset; cursor:pointer; padding:9px 16px; font-size:12.5px; font-weight:600;
+    background:var(--accent); color:#06202E; border-radius:8px; white-space:nowrap; }
+  .upload-btn:hover{ filter:brightness(1.08); }
+  .upload-btn.err{ background:var(--red); color:#2a0d09; }
+  #upload-status{ display:block; margin-top:4px; }
+  #upload-errors{ color:var(--red); font-size:11.5px; margin-top:6px; max-width:340px; display:none; }
+  .card h3{ margin:0 0 14px 0; font-size:12px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--ink-dim); font-weight:600; }
+  .c3{ grid-column: span 3; } .c4{ grid-column: span 4; } .c5{ grid-column: span 5; }
+  .c6{ grid-column: span 6; } .c7{ grid-column: span 7; } .c8{ grid-column: span 8; } .c12{ grid-column: span 12; }
+
+  .indicador{ font-size:28px; font-weight:700; margin-bottom:4px; }
+  .riesgo-row{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .pill{ font-size:12px; font-weight:600; padding:4px 11px; border-radius:100px;
+    border:1px solid var(--pill-border); color:var(--pill-fg); background:var(--pill-bg); }
+  .trend{ display:flex; align-items:center; gap:6px; color:var(--ink-dim); font-size:12.5px; margin-top:10px; }
+  .trend .arrow{ font-size:15px; font-weight:700; }
+  .diag-text{ font-size:14.5px; line-height:1.6; color:#D6DEEC; }
+  .diag-text b{ color:var(--ink); }
+
+  /* gauge */
+  .gauge-wrap{ display:flex; flex-direction:column; align-items:center; margin-top:6px; }
+  .gauge-label{ font-size:11px; color:var(--ink-dim); margin-top:2px; text-align:center; }
+  .gauge-value{ font-size:20px; font-weight:700; font-family:'IBM Plex Mono', monospace; margin-top:-38px; }
+
+  /* comparison bars */
+  .cmp-row{ margin-bottom:14px; } .cmp-row:last-child{ margin-bottom:0; }
+  .cmp-head{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
+  .cmp-head .n{ font-weight:600; color:var(--ink); }
+  .cmp-head .v{ font-family:'IBM Plex Mono', monospace; color:var(--ink-dim); }
+  .cmp-svg{ width:100%; height:22px; display:block; }
+
+  /* sliders panel */
+  .slider-row{ margin-bottom:14px; } .slider-row:last-child{ margin-bottom:0; }
+  .slider-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .slider-name{ font-size:13px; font-weight:600; color:var(--ink); }
+  .slider-value{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--accent); }
+  input[type=range]{ -webkit-appearance:none; width:100%; height:6px; border-radius:4px; background:#1B2338; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--accent); cursor:pointer; border:3px solid #0B1220; }
+  input[type=range]::-moz-range-thumb{ width:15px; height:15px; border-radius:50%; background:var(--accent); cursor:pointer; border:3px solid #0B1220; }
+  .slider-range{ display:flex; justify-content:space-between; font-size:10px; color:#5B6A87; margin-top:4px; }
+  .slider-warn{ display:none; font-size:10.5px; color:var(--amber); margin-top:6px; line-height:1.4; }
+
+  details.secondary{ border-top:1px solid var(--line); margin-top:14px; padding-top:12px; }
+  details.secondary summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--accent);
+    list-style:none; display:flex; align-items:center; gap:6px; }
+  details.secondary summary::-webkit-details-marker{ display:none; }
+  details.secondary summary .chev{ transition:transform .25s ease; font-size:11px; }
+  details.secondary[open] summary .chev{ transform:rotate(90deg); }
+  .secondary-body{ margin-top:12px; }
+
+  .varcard{ margin-bottom:12px; } .varcard:last-child{ margin-bottom:0; }
+  .varcard-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .varcard-name{ font-size:13px; font-weight:600; color:var(--ink); }
+  .varcard-value{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-dim); }
+  .bar-track{ height:7px; border-radius:5px; background:#1B2338; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:5px; transition: width .4s ease, background .3s ease; }
+  .varcard-status{ font-size:11px; margin-top:5px; font-weight:600; }
+
+  details.explain{ border-top:1px solid var(--line); margin-top:14px; padding-top:12px; }
+  details.explain summary{ cursor:pointer; font-size:13px; font-weight:600; color:var(--accent);
+    list-style:none; display:flex; align-items:center; gap:6px; }
+  details.explain summary::-webkit-details-marker{ display:none; }
+  details.explain summary .chev{ transition:transform .25s ease; font-size:11px; }
+  details.explain[open] summary .chev{ transform:rotate(90deg); }
+  .explain-body{ margin-top:10px; font-size:13px; line-height:1.55; color:#C6CEDE; }
+  .explain-body ol{ margin:8px 0 0 0; padding-left:18px; }
+  .explain-body li{ margin-bottom:6px; }
+  .explain-body .node-feat{ color:var(--accent); font-weight:600; }
+
+  .rec-list{ list-style:none; margin:0; padding:0; }
+  .rec-list li{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; padding:8px 0; border-bottom:1px solid #1B2338; }
+  .rec-list li:last-child{ border-bottom:none; }
+  .rec-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); margin-top:6px; flex-shrink:0; }
+
+  .actions{ display:flex; flex-wrap:wrap; gap:10px; }
+  .action-btn{ all:unset; cursor:pointer; font-size:13px; font-weight:600; padding:10px 16px;
+    border-radius:9px; border:1px solid var(--line); color:var(--ink); background:var(--panel-2); transition:all .2s ease;
+    display:flex; align-items:center; gap:8px; }
+  .action-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .action-btn .ico{ font-size:14px; }
+
+  .hist-wrap{ display:flex; align-items:flex-end; gap:3px; height:58px; }
+  .hist-bar{ flex:1; border-radius:3px 3px 0 0; transition:height .4s ease, background .4s ease; }
+  .hist-legend{ display:flex; gap:16px; margin-top:10px; font-size:11.5px; color:var(--ink-dim); align-items:center; }
+  .legend-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .hist-split{ display:flex; gap:20px; }
+  .hist-donut-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+  .hist-donut-label{ font-size:11px; color:var(--ink-dim); text-align:center; }
+
+  .footnote{ font-size:11px; color:#5B6A87; margin-top:14px; line-height:1.5; }
+
+  /* modal */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(4,8,16,0.72); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    max-width:640px; width:100%; max-height:82vh; overflow-y:auto; padding:26px 28px;
+  }
+  .modal-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .modal-title{ font-size:16px; font-weight:700; }
+  .modal-close{ all:unset; cursor:pointer; color:var(--ink-dim); font-size:20px; line-height:1; padding:4px; }
+  .modal-close:hover{ color:var(--ink); }
+  .modal-body{ font-size:13.5px; line-height:1.65; color:#D6DEEC; }
+  .modal-body h4{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:16px 0 8px 0; }
+  .modal-body h4:first-child{ margin-top:0; }
+  .modal-body table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:6px; }
+  .modal-body td, .modal-body th{ padding:6px 8px; border-bottom:1px solid #1B2338; text-align:left; }
+  .modal-body th{ color:var(--ink-dim); font-weight:600; font-size:11px; text-transform:uppercase; }
+  .modal-body textarea{
+    width:100%; height:220px; background:#0B1220; color:#C6CEDE; border:1px solid var(--line);
+    border-radius:8px; padding:10px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; resize:vertical;
+  }
+  .copy-btn{ all:unset; cursor:pointer; margin-top:10px; display:inline-block; font-size:12.5px; font-weight:600;
+    padding:8px 14px; border-radius:8px; background:var(--accent); color:#06202E; }
+  .copy-btn:hover{ opacity:.9; }
+  .badge{ display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:100px; margin-left:6px; }
+
+  @media (max-width: 980px){
+    .c3,.c4,.c5,.c6,.c7,.c8,.c12{ grid-column: span 12; }
+    .meta{ margin-left:0 !important; text-align:left !important; width:100%; }
+    .shell{ flex-direction:column; }
+    .sidebar{ width:100%; position:static; flex-direction:row; flex-wrap:wrap; }
+    .kpi-strip{ grid-template-columns:repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="bolt">⚡</div>
+      <div class="name">POWER QUALITY AI<span>Panel de clasificación</span></div>
+    </div>
+    <a class="navlink active" href="#resumen"><span class="ico">🏠</span>Resumen general</a>
+    <a class="navlink" href="#indices"><span class="ico">📐</span>Índices de calidad</a>
+    <a class="navlink" href="#variables"><span class="ico">🎛️</span>Variables del medidor</a>
+    <a class="navlink" href="#arbol"><span class="ico">🌳</span>Recorrido del árbol</a>
+    <a class="navlink" href="#acciones"><span class="ico">🧭</span>Acciones sugeridas</a>
+    <a class="navlink" href="#historial"><span class="ico">📊</span>Historial de sesión</a>
+    <div class="sidebar-foot">
+      Modelo: Árbol de Decisión<br>
+      <span id="meta-training-rows">1.874 registros de entrenamiento</span><br>
+      <span id="meta-used-features">11 de 15 variables usadas</span>
+    </div>
+  </aside>
+
+<div class="wrap">
+
+  <div class="statusbar" id="resumen">
+    <div class="semaforo" id="semaforo-dot"></div>
+    <div>
+      <div class="status-text" id="status-text">—</div>
+      <div class="status-sub" id="status-sub">—</div>
+    </div>
+    <div class="demo-select" style="margin-left:8px;">
+      <button data-c="low">Cargar ejemplo: Bajo</button>
+      <button data-c="medium">Cargar ejemplo: Medio</button>
+      <button data-c="high">Cargar ejemplo: Alto</button>
+    </div>
+    <div class="meta">
+      Medidor: <b>Sub-estación 03 · Fase Principal</b><br>
+      Clasificación calculada en vivo con el árbol entrenado (<span id="meta-nodes"></span>)
+    </div>
+  </div>
+
+  <!-- CARGA DE HISTORICO -->
+  <div class="upload-card" id="upload-card">
+    <div>
+      <h3>📁 Cargar histórico y reentrenar el árbol (Excel/CSV)</h3>
+      <div class="footnote">Sube un archivo con las mismas columnas del medidor. El notebook original (limpieza, normalización Min-Max, terciles del target y <code>DecisionTreeClassifier</code>) se ejecuta con Python real dentro del navegador (Pyodide) sobre tus datos, genera un árbol nuevo específico para ese archivo, y todo el panel se actualiza con él. La primera carga tarda ~30–90s mientras se instala el entorno Python.</div>
+      <div id="upload-errors"></div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+      <label for="file-historico" class="upload-btn" id="upload-btn-label">Elegir archivo</label>
+      <input type="file" id="file-historico" accept=".xlsx,.xls,.csv" style="display:none;">
+      <span id="upload-status" class="mono" style="font-size:11.5px; color:var(--ink-dim);">Ningún archivo cargado</span>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-label">Corriente promedio</div>
+      <div class="kpi-value" id="kpi-current">—</div>
+      <div class="kpi-sub">Fases A · B · C</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Voltaje promedio</div>
+      <div class="kpi-value" id="kpi-voltage">—</div>
+      <div class="kpi-sub">Fase-neutro</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Potencia aparente</div>
+      <div class="kpi-value" id="kpi-power">—</div>
+      <div class="kpi-sub">Total del sistema</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Factor de potencia</div>
+      <div class="kpi-value" id="kpi-cosphi">—</div>
+      <div class="kpi-sub">Cos φ total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Estado del sistema</div>
+      <div class="kpi-value" id="kpi-estado">—</div>
+      <div class="kpi-sub" id="kpi-estado-sub">—</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: parametros electricos + indices de calidad reales -->
+  <div class="grid" id="indices">
+    <div class="card c4">
+      <h3>Desequilibrio de voltaje</h3>
+      <div class="idx-value" id="idx-vunb">—</div>
+      <div class="idx-bar-track"><div class="idx-bar-fill" id="idx-vunb-bar"></div></div>
+      <div class="idx-note">Máx. desviación de fase vs. promedio · referencia: excelente &lt;1%, aceptable 1–2%, revisar &gt;2%</div>
+    </div>
+    <div class="card c4">
+      <h3>Desequilibrio de corriente</h3>
+      <div class="idx-value" id="idx-cunb">—</div>
+      <div class="idx-bar-track"><div class="idx-bar-fill" id="idx-cunb-bar"></div></div>
+      <div class="idx-note">Máx. desviación de fase vs. promedio · referencia: excelente &lt;10%, aceptable 10–20%, revisar &gt;20%</div>
+    </div>
+    <div class="card c4">
+      <h3>Índice de factor de potencia</h3>
+      <div class="idx-value" id="idx-fp">—</div>
+      <div class="idx-bar-track"><div class="idx-bar-fill" id="idx-fp-bar"></div></div>
+      <div class="idx-note" id="idx-fp-note">Cos φ total · referencia: excelente ≥0.95, aceptable 0.85–0.95, revisar &lt;0.85</div>
+    </div>
+  </div>
+
+  <!-- ROW 1b: resumen + gauge | diagnostico | panorama rapido -->
+  <div class="grid">
+    <div class="card c3">
+      <h3>Resumen general</h3>
+      <div class="indicador" id="indicador">—</div>
+      <div style="color:var(--ink-dim); font-size:12.5px;">Clasificación detectada por el sistema</div>
+      <div class="riesgo-row"><span class="pill" id="pill-riesgo">Riesgo</span></div>
+      <div class="trend"><span class="arrow" id="trend-arrow">→</span><span id="trend-text">—</span></div>
+    </div>
+
+    <div class="card c4">
+      <h3>Diagnóstico inteligente</h3>
+      <div class="diag-text" id="diag-text">—</div>
+    </div>
+
+    <div class="card c5">
+      <h3>Nivel de riesgo — panorama rápido</h3>
+      <div style="display:flex; align-items:center; gap:18px;">
+        <div class="gauge-wrap">
+          <svg id="gauge-svg" width="150" height="90" viewBox="0 0 150 90"></svg>
+          <div class="gauge-value" id="gauge-value">—</div>
+          <div class="gauge-label">Posición dentro del rango de decisión</div>
+        </div>
+        <div style="flex:1;">
+          <div id="cmp-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 1.5: path visualization (signature element) -->
+  <div class="grid" id="arbol">
+    <div class="card c12">
+      <h3>Recorrido del árbol de decisión — nodo raíz → hoja</h3>
+      <div class="path-viz" id="path-viz"></div>
+    </div>
+  </div>
+
+  <!-- ROW 1.6: tendencia real de la sesión + confiabilidad del resultado (soporte a decisión) -->
+  <div class="grid" id="tendencia-sesion">
+    <div class="card c8">
+      <h3>Tendencia de la sesión — variables clave</h3>
+      <div id="trend-chart"></div>
+      <div id="trend-legend" style="margin-top:10px; font-size:11.5px; color:var(--ink-dim);"></div>
+      <div class="footnote">Cada línea usa su propio rango real (min–max del dataset de entrenamiento vigente) para que las escalas distintas sean comparables. Se grafican las últimas 30 lecturas de la sesión (cada movimiento de un control cuenta como una lectura). Si el archivo cargado no incluye alguna variable, esa línea se omite; si no incluye ninguna de las 4 clásicas (corriente, voltaje, potencia, cos φ), el panel grafica en su lugar hasta 4 variables reales que el árbol sí está usando, y lo indica debajo del gráfico.</div>
+    </div>
+    <div class="card c4">
+      <h3>Confiabilidad de la clasificación</h3>
+      <div class="idx-value" id="conf-value">—</div>
+      <div class="idx-bar-track"><div class="idx-bar-fill" id="conf-bar"></div></div>
+      <div class="idx-note" id="conf-note">—</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: sliders | variables criticas | recomendaciones -->
+  <div class="grid" id="variables">
+    <div class="card c4">
+      <h3>Lectura del medidor — variables principales</h3>
+      <div id="slider-primary"></div>
+      <details class="secondary">
+        <summary><span class="chev">▶</span> Variables secundarias (ajuste fino)</summary>
+        <div class="secondary-body" id="slider-secondary"></div>
+      </details>
+    </div>
+
+    <div class="card c4">
+      <h3>Variables críticas de esta lectura</h3>
+      <div id="var-container"></div>
+      <details class="explain">
+        <summary><span class="chev">▶</span> ¿Por qué el sistema decidió esto?</summary>
+        <div class="explain-body" id="explain-body">—</div>
+      </details>
+    </div>
+
+    <div class="card c4">
+      <h3>Recomendaciones</h3>
+      <ul class="rec-list" id="rec-list"></ul>
+    </div>
+  </div>
+
+  <!-- ROW 3: acciones -->
+  <div class="grid" id="acciones">
+    <div class="card c12">
+      <h3>Acciones sugeridas</h3>
+      <div class="actions">
+        <button class="action-btn" id="btn-detalle"><span class="ico">🔍</span>Ver detalle</button>
+        <button class="action-btn" id="btn-analizar"><span class="ico">🧭</span>Analizar registro</button>
+        <button class="action-btn" id="btn-historico"><span class="ico">📊</span>Comparar histórico</button>
+        <button class="action-btn" id="btn-calidad"><span class="ico">📐</span>Diagnóstico de calidad de energía</button>
+        <button class="action-btn" id="btn-exportar"><span class="ico">📄</span>Exportar reporte</button>
+        <button class="action-btn" id="btn-diagnostico"><span class="ico">🩺</span>Generar diagnóstico</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: historial -->
+  <div class="grid" id="historial">
+    <div class="card c8">
+      <h3>Historial / Tendencia (lecturas registradas en esta sesión)</h3>
+      <div class="hist-wrap" id="hist-wrap"></div>
+      <div class="footnote" id="hist-sample-note" style="margin:4px 0 0 0;"></div>
+      <div class="hist-legend">
+        <span><span class="legend-dot" style="background:var(--green)"></span>Bajo</span>
+        <span><span class="legend-dot" style="background:var(--amber)"></span>Medio</span>
+        <span><span class="legend-dot" style="background:var(--red)"></span>Alto</span>
+      </div>
+      <div class="footnote">Cada vez que mueves un control, el sistema recalcula la clasificación recorriendo el árbol de decisión real entrenado sobre el dataset (profundidad 8, 26 hojas) y agrega el resultado a este historial.</div>
+    </div>
+    <div class="card c4">
+      <h3>Distribución de la sesión</h3>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <svg id="donut-svg" width="96" height="96" viewBox="0 0 96 96"></svg>
+        <div id="donut-legend" style="font-size:12px; color:var(--ink-dim); line-height:1.9;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /.shell -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">—</div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body">—</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+let TREE = {"feature_order": ["Vrms ph-n AN Avg", "Vrms ph-n BN Avg", "Vrms ph-n CN Avg", "Current A Avg", "Current B Avg", "Current C Avg", "Current Phi AN Avg", "Current Phi BN Avg", "Current Phi CN Avg", "Apparent Power Total Avg", "Reactive Power Total Avg", "Cos Phi AN Avg", "Cos Phi BN Avg", "Cos Phi CN Avg", "Cos Phi Total Avg"], "used_features": ["Apparent Power Total Avg", "Cos Phi AN Avg", "Cos Phi BN Avg", "Cos Phi Total Avg", "Current A Avg", "Current B Avg", "Current C Avg", "Current Phi AN Avg", "Current Phi BN Avg", "Vrms ph-n AN Avg", "Vrms ph-n BN Avg"], "feature_stats": {"Vrms ph-n AN Avg": {"min": 0.2, "max": 253.66, "mean": 243.27958173282116, "median": 244.4}, "Vrms ph-n BN Avg": {"min": 0.02, "max": 254.78, "mean": 242.85540759709772, "median": 244.0}, "Vrms ph-n CN Avg": {"min": 0.06, "max": 253.16, "mean": 243.19014084507043, "median": 244.5}, "Current A Avg": {"min": 0.1, "max": 6276.7, "mean": 738.984336320956, "median": 756.8}, "Current B Avg": {"min": 0.1, "max": 6276.7, "mean": 680.9373452838241, "median": 699.3}, "Current C Avg": {"min": 0.1, "max": 835.3, "mean": 623.0535211267605, "median": 647.4}, "Current Phi AN Avg": {"min": -359.56, "max": 655.34, "mean": -69.7150234741784, "median": -4.98}, "Current Phi BN Avg": {"min": -200.2, "max": 655.34, "mean": -129.9263593683312, "median": -130.18}, "Current Phi CN Avg": {"min": -258.34, "max": -168.58, "mean": -242.59341869398202, "median": -242.86}, "Apparent Power Total Avg": {"min": 0.0, "max": 4915050.0, "mean": 507136.93982074264, "median": 517800.0}, "Reactive Power Total Avg": {"min": -46050.0, "max": 4915050.0, "mean": 54310.6914212548, "median": 42450.0}, "Cos Phi AN Avg": {"min": 0.0, "max": 327.67, "mean": 1.1302262057191634, "median": 1.0}, "Cos Phi BN Avg": {"min": 0.0, "max": 327.67, "mean": 1.3928851899274437, "median": 0.98}, "Cos Phi CN Avg": {"min": 0.0, "max": 1.0, "mean": 0.989351259069569, "median": 1.0}, "Cos Phi Total Avg": {"min": 0.0, "max": 327.67, "mean": 1.5452624839948785, "median": 1.0}}, "nodes": [{"id": 0, "leaf": false, "feature": "Current A Avg", "threshold": 0.12007296830415726, "left": 1, "right": 32, "samples": 1874}, {"id": 1, "leaf": false, "feature": "Apparent Power Total Avg", "threshold": 0.08946501091122627, "left": 2, "right": 11, "samples": 925}, {"id": 2, "leaf": false, "feature": "Apparent Power Total Avg", "threshold": 0.08911404758691788, "left": 3, "right": 4, "samples": 463}, {"id": 3, "leaf": true, "class": "low", "samples": 453}, {"id": 4, "leaf": false, "feature": "Vrms ph-n BN Avg", "threshold": 0.9444575309753418, "left": 5, "right": 6, "samples": 10}, {"id": 5, "leaf": true, "class": "medium", "samples": 1}, {"id": 6, "leaf": false, "feature": "Cos Phi BN Avg", "threshold": 0.0030060731805860996, "left": 7, "right": 8, "samples": 9}, {"id": 7, "leaf": true, "class": "low", "samples": 7}, {"id": 8, "leaf": false, "feature": "Current B Avg", "threshold": 0.09437434375286102, "left": 9, "right": 10, "samples": 2}, {"id": 9, "leaf": true, "class": "medium", "samples": 1}, {"id": 10, "leaf": true, "class": "low", "samples": 1}, {"id": 11, "leaf": false, "feature": "Current A Avg", "threshold": 0.10237230360507965, "left": 12, "right": 17, "samples": 462}, {"id": 12, "leaf": false, "feature": "Apparent Power Total Avg", "threshold": 0.09215063974261284, "left": 13, "right": 14, "samples": 10}, {"id": 13, "leaf": true, "class": "low", "samples": 6}, {"id": 14, "leaf": false, "feature": "Vrms ph-n AN Avg", "threshold": 0.9551803171634674, "left": 15, "right": 16, "samples": 4}, {"id": 15, "leaf": true, "class": "medium", "samples": 1}, {"id": 16, "leaf": true, "class": "high", "samples": 3}, {"id": 17, "leaf": false, "feature": "Apparent Power Total Avg", "threshold": 0.10632648691534996, "left": 18, "right": 31, "samples": 452}, {"id": 18, "leaf": false, "feature": "Current B Avg", "threshold": 0.09287671372294426, "left": 19, "right": 20, "samples": 449}, {"id": 19, "leaf": true, "class": "low", "samples": 2}, {"id": 20, "leaf": false, "feature": "Current A Avg", "threshold": 0.1197463609278202, "left": 21, "right": 26, "samples": 447}, {"id": 21, "leaf": false, "feature": "Current Phi BN Avg", "threshold": 0.0865769013762474, "left": 22, "right": 23, "samples": 435}, {"id": 22, "leaf": true, "class": "medium", "samples": 432}, {"id": 23, "leaf": false, "feature": "Current A Avg", "threshold": 0.11753975227475166, "left": 24, "right": 25, "samples": 3}, {"id": 24, "leaf": true, "class": "medium", "samples": 2}, {"id": 25, "leaf": true, "class": "high", "samples": 1}, {"id": 26, "leaf": false, "feature": "Current B Avg", "threshold": 0.11144568771123886, "left": 27, "right": 28, "samples": 12}, {"id": 27, "leaf": true, "class": "medium", "samples": 8}, {"id": 28, "leaf": false, "feature": "Current Phi AN Avg", "threshold": 0.353542223572731, "left": 29, "right": 30, "samples": 4}, {"id": 29, "leaf": true, "class": "high", "samples": 3}, {"id": 30, "leaf": true, "class": "medium", "samples": 1}, {"id": 31, "leaf": true, "class": "high", "samples": 3}, {"id": 32, "leaf": false, "feature": "Apparent Power Total Avg", "threshold": 0.10438856109976768, "left": 33, "right": 34, "samples": 949}, {"id": 33, "leaf": true, "class": "medium", "samples": 17}, {"id": 34, "leaf": false, "feature": "Current C Avg", "threshold": 0.7431752681732178, "left": 35, "right": 36, "samples": 932}, {"id": 35, "leaf": true, "class": "medium", "samples": 1}, {"id": 36, "leaf": false, "feature": "Current A Avg", "threshold": 0.12078195437788963, "left": 37, "right": 46, "samples": 931}, {"id": 37, "leaf": false, "feature": "Current Phi AN Avg", "threshold": 0.3496994823217392, "left": 38, "right": 43, "samples": 18}, {"id": 38, "leaf": false, "feature": "Cos Phi BN Avg", "threshold": 0.0029450361616909504, "left": 39, "right": 42, "samples": 13}, {"id": 39, "leaf": false, "feature": "Cos Phi AN Avg", "threshold": 0.002975554671138525, "left": 40, "right": 41, "samples": 2}, {"id": 40, "leaf": true, "class": "high", "samples": 1}, {"id": 41, "leaf": true, "class": "medium", "samples": 1}, {"id": 42, "leaf": true, "class": "high", "samples": 11}, {"id": 43, "leaf": false, "feature": "Cos Phi Total Avg", "threshold": 0.0030365916900336742, "left": 44, "right": 45, "samples": 5}, {"id": 44, "leaf": true, "class": "medium", "samples": 3}, {"id": 45, "leaf": true, "class": "high", "samples": 2}, {"id": 46, "leaf": false, "feature": "Current A Avg", "threshold": 0.12164228782057762, "left": 47, "right": 50, "samples": 913}, {"id": 47, "leaf": false, "feature": "Current A Avg", "threshold": 0.12161839008331299, "left": 48, "right": 49, "samples": 25}, {"id": 48, "leaf": true, "class": "high", "samples": 24}, {"id": 49, "leaf": true, "class": "medium", "samples": 1}, {"id": 50, "leaf": true, "class": "high", "samples": 888}], "depth": 8, "n_leaves": 26, "target_bins_real": {"low": [0.0, 434175.8568], "medium": [434175.8568, 509100.879], "high": [509100.879, 4915050.0]}};
+const PRESETS = {
+  "low": {
+    "Vrms ph-n AN Avg": 245.54,
+    "Vrms ph-n BN Avg": 244.96,
+    "Vrms ph-n CN Avg": 245.58,
+    "Current A Avg": 562.1,
+    "Current B Avg": 478.7,
+    "Current C Avg": 442.9,
+    "Current Phi AN Avg": -356.38,
+    "Current Phi BN Avg": -126.76,
+    "Current Phi CN Avg": -234.2,
+    "Apparent Power Total Avg": 365850.0,
+    "Reactive Power Total Avg": -5550.0,
+    "Cos Phi AN Avg": 1.0,
+    "Cos Phi BN Avg": 0.99,
+    "Cos Phi CN Avg": 0.99,
+    "Cos Phi Total Avg": 1.0
+  },
+  "medium": {
+    "Vrms ph-n AN Avg": 251.24,
+    "Vrms ph-n BN Avg": 251.26,
+    "Vrms ph-n CN Avg": 251.54,
+    "Current A Avg": 739.2,
+    "Current B Avg": 676.2,
+    "Current C Avg": 625.5,
+    "Current Phi AN Avg": -4.76,
+    "Current Phi BN Avg": -132.38,
+    "Current Phi CN Avg": -246.2,
+    "Apparent Power Total Avg": 514200.0,
+    "Reactive Power Total Avg": 67500.0,
+    "Cos Phi AN Avg": 1.0,
+    "Cos Phi BN Avg": 0.98,
+    "Cos Phi CN Avg": 0.99,
+    "Cos Phi Total Avg": 0.99
+  },
+  "high": {
+    "Vrms ph-n AN Avg": 242.18,
+    "Vrms ph-n BN Avg": 242.02,
+    "Vrms ph-n CN Avg": 242.74,
+    "Current A Avg": 873.7,
+    "Current B Avg": 808.7,
+    "Current C Avg": 764.0,
+    "Current Phi AN Avg": -3.18,
+    "Current Phi BN Avg": -129.26,
+    "Current Phi CN Avg": -243.42,
+    "Apparent Power Total Avg": 593550.0,
+    "Reactive Power Total Avg": 54450.0,
+    "Cos Phi AN Avg": 1.0,
+    "Cos Phi BN Avg": 0.99,
+    "Cos Phi CN Avg": 1.0,
+    "Cos Phi Total Avg": 1.0
+  }
+};
+
+const LABELS = {
+  'Current A Avg': {name:'Corriente Fase A', unit:'A', primary:true},
+  'Apparent Power Total Avg': {name:'Potencia Aparente Total', unit:'VA', primary:true},
+  'Current B Avg': {name:'Corriente Fase B', unit:'A'},
+  'Current C Avg': {name:'Corriente Fase C', unit:'A'},
+  'Vrms ph-n AN Avg': {name:'Voltaje Fase A (An-N)', unit:'V'},
+  'Vrms ph-n BN Avg': {name:'Voltaje Fase B (Bn-N)', unit:'V'},
+  'Vrms ph-n CN Avg': {name:'Voltaje Fase C (Cn-N)', unit:'V'},
+  'Current Phi AN Avg': {name:'Desfase de Corriente Fase A', unit:'°'},
+  'Current Phi BN Avg': {name:'Desfase de Corriente Fase B', unit:'°'},
+  'Current Phi CN Avg': {name:'Desfase de Corriente Fase C', unit:'°'},
+  'Cos Phi AN Avg': {name:'Factor de Potencia Fase A', unit:''},
+  'Cos Phi BN Avg': {name:'Factor de Potencia Fase B', unit:''},
+  'Cos Phi CN Avg': {name:'Factor de Potencia Fase C', unit:''},
+  'Cos Phi Total Avg': {name:'Factor de Potencia Total', unit:''},
+  'Reactive Power Total Avg': {name:'Potencia Reactiva Total', unit:'VAR'},
+};
+
+const CLASS_META = {
+  low:    {colorHex:'#2ECC71', label:'Bajo consumo', riesgo:'Riesgo bajo',
+           statusText:'Calidad de energía: NORMAL', statusSub:'Consumo dentro de los rangos habituales', gaugePos:18},
+  medium: {colorHex:'#F5A623', label:'Consumo moderado', riesgo:'Riesgo medio',
+           statusText:'Calidad de energía: MODERADA', statusSub:'Se recomienda mantener monitoreo activo', gaugePos:50},
+  high:   {colorHex:'#F0523E', label:'Consumo elevado', riesgo:'Riesgo alto',
+           statusText:'Calidad de energía: ELEVADA — requiere atención', statusSub:'Se recomienda revisar la carga asociada', gaugePos:85},
+};
+
+let currentValues = {};
+let history = [];       // array of {cls, ts, path, values}
+let valueHistory = [];  // array of {ts, cls, raw:{current,voltage,power,cosphi}} — tendencia de sesión, se registra en cada recompute
+let lastClass = null;
+let lastResult = null;
+let lastQualityIndices = {voltage: null, current: null, powerFactor: null};
+
+function fmt(v, feat){
+  const info = LABELS[feat] || {};
+  let digits = 0;
+  if (info.unit === '') digits = 2;
+  else if (Math.abs(v) < 10) digits = 2;
+  return Number(v).toLocaleString('es-CO', {minimumFractionDigits:digits, maximumFractionDigits:digits}) + (info.unit ? (' ' + info.unit) : '');
+}
+
+function normalize(feat, value){
+  const s = TREE.feature_stats[feat];
+  return (value - s.min) / (s.max - s.min);
+}
+
+function traverseTree(realValues){
+  let nodeId = 0;
+  const path = [];
+  while(true){
+    const node = TREE.nodes[nodeId];
+    if(node.leaf){
+      return {predicted: node.class, path, leafSamples: node.samples};
+    }
+    const feat = node.feature;
+    const realVal = realValues[feat];
+    const normVal = normalize(feat, realVal);
+    const goLeft = normVal <= node.threshold;
+    const thresholdReal = TREE.feature_stats[feat].min + node.threshold * (TREE.feature_stats[feat].max - TREE.feature_stats[feat].min);
+    path.push({feature: feat, thresholdReal, realVal, direction: goLeft ? 'left' : 'right', nodeId});
+    nodeId = goLeft ? node.left : node.right;
+  }
+}
+
+/* ---------------- SLIDERS ---------------- */
+function cssId(feat){ return feat.replace(/[^a-zA-Z0-9]/g,''); }
+
+function buildSliders(){
+  const primaryFeats = TREE.used_features.filter(f => LABELS[f] && LABELS[f].primary);
+  const secondaryFeats = TREE.used_features.filter(f => LABELS[f] && !LABELS[f].primary);
+  const primaryHost = document.getElementById('slider-primary');
+  const secondaryHost = document.getElementById('slider-secondary');
+  primaryHost.innerHTML = ''; secondaryHost.innerHTML = '';
+
+  function isPowerFactorFeat(feat){ return feat.indexOf('Cos Phi') === 0; }
+
+  function updateSliderWarning(feat){
+    const el = document.getElementById('warn-' + cssId(feat));
+    if(!el) return;
+    const v = currentValues[feat];
+    if (v > 1.2 || v < 0){
+      el.textContent = '⚠︎ Fuera del rango físico de un factor de potencia (0–1) — reproduce un código de error de sensor presente en el dataset original.';
+      el.style.display = 'block';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  }
+
+  function makeSlider(feat, host){
+    const stats = TREE.feature_stats[feat];
+    const info = LABELS[feat];
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    const step = (stats.max - stats.min) / 500;
+    const warnHtml = isPowerFactorFeat(feat) ? `<div class="slider-warn" id="warn-${cssId(feat)}"></div>` : '';
+    row.innerHTML = `
+      <div class="slider-head">
+        <span class="slider-name">${info.name}</span>
+        <span class="slider-value mono" id="val-${cssId(feat)}"></span>
+      </div>
+      <input type="range" id="slider-${cssId(feat)}" min="${stats.min}" max="${stats.max}" step="${step}" value="${currentValues[feat]}">
+      <div class="slider-range"><span>${fmt(stats.min, feat)}</span><span>${fmt(stats.max, feat)}</span></div>
+      ${warnHtml}
+    `;
+    host.appendChild(row);
+    const input = row.querySelector('input');
+    if (isPowerFactorFeat(feat)) updateSliderWarning(feat);
+    input.addEventListener('input', () => {
+      currentValues[feat] = parseFloat(input.value);
+      document.getElementById('val-' + cssId(feat)).textContent = fmt(currentValues[feat], feat);
+      if (isPowerFactorFeat(feat)) updateSliderWarning(feat);
+      recompute();
+    });
+  }
+  primaryFeats.forEach(f => makeSlider(f, primaryHost));
+  secondaryFeats.forEach(f => makeSlider(f, secondaryHost));
+}
+
+function refreshSliderDisplays(){
+  TREE.used_features.forEach(feat=>{
+    if(!LABELS[feat]) return;
+    const input = document.getElementById('slider-' + cssId(feat));
+    const val = document.getElementById('val-' + cssId(feat));
+    if(input){ input.value = currentValues[feat]; }
+    if(val){ val.textContent = fmt(currentValues[feat], feat); }
+    const warn = document.getElementById('warn-' + cssId(feat));
+    if(warn){
+      const v = currentValues[feat];
+      if (v > 1.2 || v < 0){
+        warn.textContent = '⚠︎ Fuera del rango físico de un factor de potencia (0–1) — reproduce un código de error de sensor presente en el dataset original.';
+        warn.style.display = 'block';
+      } else {
+        warn.textContent = '';
+        warn.style.display = 'none';
+      }
+    }
+  });
+}
+
+/* ---------------- GAUGE (semicircle) ---------------- */
+function polarToCartesian(cx, cy, r, angleDeg){
+  const a = (angleDeg - 180) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+function arcPath(cx, cy, r, startAngle, endAngle){
+  const s = polarToCartesian(cx, cy, r, endAngle);
+  const e = polarToCartesian(cx, cy, r, startAngle);
+  const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
+  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 0 ${e.x} ${e.y}`;
+}
+function buildGauge(pct, colorHex){
+  const svg = document.getElementById('gauge-svg');
+  const cx = 75, cy = 80, r = 62;
+  const bgSegs = [
+    {from:0, to:60, color:'#1F5A38'},
+    {from:60, to:120, color:'#7A5416'},
+    {from:120, to:180, color:'#7A2A20'},
+  ];
+  let paths = bgSegs.map(seg => `<path d="${arcPath(cx,cy,r,seg.from,seg.to)}" stroke="${seg.color}" stroke-width="14" fill="none" stroke-linecap="butt"/>`).join('');
+  const needleAngle = (pct/100)*180;
+  const tip = polarToCartesian(cx, cy, r-6, needleAngle);
+  paths += `<line x1="${cx}" y1="${cy}" x2="${tip.x}" y2="${tip.y}" stroke="${colorHex}" stroke-width="3.5" stroke-linecap="round"/>`;
+  paths += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${colorHex}" />`;
+  svg.innerHTML = paths;
+  document.getElementById('gauge-value').textContent = Math.round(pct) + '%';
+  document.getElementById('gauge-value').style.color = colorHex;
+}
+
+/* ---------------- COMPARISON BARS ---------------- */
+function buildComparisonChart(showFeats, pathFeats, colorHex){
+  const host = document.getElementById('cmp-container');
+  host.innerHTML = '';
+  showFeats.forEach(feat=>{
+    const stats = TREE.feature_stats[feat];
+    const info = LABELS[feat];
+    const val = currentValues[feat];
+    const pct = Math.max(2, Math.min(98, ((val - stats.min) / (stats.max - stats.min)) * 100));
+    const inPath = pathFeats.includes(feat);
+    const barColor = inPath ? colorHex : '#4C5A78';
+    const row = document.createElement('div');
+    row.className = 'cmp-row';
+    row.innerHTML = `
+      <div class="cmp-head"><span class="n">${info.name}</span><span class="v mono">${fmt(val, feat)}</span></div>
+      <svg class="cmp-svg" viewBox="0 0 300 22" preserveAspectRatio="none">
+        <rect x="0" y="8" width="300" height="6" rx="3" fill="#1B2338"/>
+        <rect x="0" y="8" width="${pct*3}" height="6" rx="3" fill="${barColor}"/>
+        <circle cx="${pct*3}" cy="11" r="6" fill="${barColor}" stroke="#0B1220" stroke-width="2"/>
+      </svg>
+    `;
+    host.appendChild(row);
+  });
+}
+
+/* ---------------- DONUT (session distribution) ---------------- */
+function buildDonut(){
+  const counts = {low:0, medium:0, high:0};
+  history.forEach(h => counts[h.cls]++);
+  const total = history.length || 1;
+  const order = ['low','medium','high'];
+  const svg = document.getElementById('donut-svg');
+  const cx=48, cy=48, r=36, sw=14;
+  let angle = -90;
+  let paths = '';
+  order.forEach(cls=>{
+    const frac = counts[cls]/total;
+    if(frac <= 0) return;
+    const sweep = frac*360;
+    const large = sweep > 180 ? 1 : 0;
+    const a1 = angle * Math.PI/180, a2 = (angle+sweep) * Math.PI/180;
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    const x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+    paths += `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}" stroke="${CLASS_META[cls].colorHex}" stroke-width="${sw}" fill="none"/>`;
+    angle += sweep;
+  });
+  svg.innerHTML = paths || `<circle cx="${cx}" cy="${cy}" r="${r}" stroke="#1B2338" stroke-width="${sw}" fill="none"/>`;
+  const legend = document.getElementById('donut-legend');
+  legend.innerHTML = order.map(cls => `<div><span class="legend-dot" style="background:${CLASS_META[cls].colorHex}"></span>${CLASS_META[cls].label.split(' ')[0]}: ${counts[cls]}</div>`).join('');
+}
+
+/* ---------------- EXPLANATION / RECOMMENDATIONS ---------------- */
+function explainStep(step){
+  const info = LABELS[step.feature] || {name: step.feature, unit:''};
+  const dirWord = step.direction === 'left' ? 'no supera' : 'supera';
+  return `<span class="node-feat">${info.name}</span>: el valor medido es <b>${fmt(step.realVal, step.feature)}</b>, que ${dirWord} el umbral de decisión del árbol (<b>${fmt(step.thresholdReal, step.feature)}</b>).`;
+}
+
+function determinantFeatures(path){
+  // features ranked by proximity to root (index 0 = most determinant)
+  const seen = [];
+  path.forEach(p => { if(!seen.includes(p.feature)) seen.push(p.feature); });
+  return seen;
+}
+
+function buildRecommendations(cls, path){
+  if(cls === 'low'){
+    return [
+      {icon:'✅', text:'No se requiere ninguna acción — todas las variables evaluadas están dentro de lo normal.'},
+      {icon:'🔁', text:'Continuar con el monitoreo estándar del sistema.'}
+    ];
+  }
+  const usedFeatSet = new Set(path.map(p=>p.feature));
+  const recs = [];
+  if(usedFeatSet.has('Current A Avg')) recs.push({icon:'⚡', text:'Revisar la carga conectada a la fase A: su corriente medida superó el rango habitual.'});
+  if(usedFeatSet.has('Apparent Power Total Avg')) recs.push({icon:'🔌', text:'Verificar posible sobrecarga general del circuito: la potencia aparente total está por encima de lo esperado.'});
+  if(usedFeatSet.has('Current B Avg') || usedFeatSet.has('Current C Avg')) recs.push({icon:'⚖️', text:'Revisar el balance de carga entre fases B y C — una diferencia marcada entre fases puede indicar una fase sobrecargada.'});
+  if(usedFeatSet.has('Vrms ph-n AN Avg') || usedFeatSet.has('Vrms ph-n BN Avg')) recs.push({icon:'📈', text:'Verificar la estabilidad del voltaje de línea — variaciones sostenidas pueden afectar el desempeño de los equipos conectados.'});
+  if(usedFeatSet.has('Cos Phi AN Avg') || usedFeatSet.has('Cos Phi BN Avg') || usedFeatSet.has('Cos Phi Total Avg')) recs.push({icon:'🎯', text:'Revisar el factor de potencia: un valor bajo puede indicar cargas reactivas que reducen la eficiencia del sistema.'});
+  if(cls === 'medium'){ recs.push({icon:'👁️', text:'Mantener monitoreo activo: la condición no exige una intervención inmediata, pero conviene seguir su evolución.'}); }
+  else if(cls === 'high'){ recs.push({icon:'🛠️', text:'Programar una inspección técnica si esta condición se repite en próximas lecturas.'}); }
+  return recs.length ? recs : [{icon:'👁️', text:'Mantener monitoreo activo.'}];
+}
+
+function buildDiagnosis(cls, path){
+  const usedNames = [...new Set(path.map(p => (LABELS[p.feature]||{}).name || p.feature))];
+  if(cls === 'low'){
+    return `El árbol de decisión clasificó esta lectura como consumo <b>BAJO</b>. Al evaluar ${usedNames.join(', ')}, todas se ubican dentro de sus rangos históricos normales — no hay señales de sobrecarga ni de desbalance entre fases. <b>No se requiere ninguna acción.</b>`;
+  }
+  if(cls === 'medium'){
+    return `El árbol de decisión clasificó esta lectura como consumo <b>MEDIO</b>. Al evaluar ${usedNames.join(', ')}, encontró que al menos una de estas variables superó su umbral habitual, pero el conjunto de condiciones no llega al nivel de alerta alta. Es una señal de atención temprana: conviene <b>vigilar la tendencia</b>, aunque todavía no exige una intervención inmediata.`;
+  }
+  return `El árbol de decisión clasificó esta lectura como consumo <b>ALTO</b>. Al evaluar ${usedNames.join(', ')}, encontró que varias de estas variables superaron sus umbrales normales al mismo tiempo, lo que indica una condición de consumo elevado. Se recomienda <b>revisión</b>, porque si la condición persiste puede derivar en sobrecarga o desgaste de los equipos.`;
+}
+
+/* ---------------- QUALITY INDICES (computed from real live readings) ---------------- */
+function setIndexCard(valId, barId, text, pct, colorHex){
+  document.getElementById(valId).textContent = text;
+  document.getElementById(valId).style.color = colorHex;
+  const bar = document.getElementById(barId);
+  bar.style.width = Math.max(3, Math.min(100, pct)) + '%';
+  bar.style.background = colorHex;
+}
+
+// Una variable se considera "disponible" solo si el archivo subido realmente
+// trajo esa columna (existe en TREE.feature_stats) y el valor actual es numérico.
+function featAvailable(feat){
+  return TREE && TREE.feature_stats && TREE.feature_stats[feat] !== undefined &&
+         typeof currentValues[feat] === 'number' && !Number.isNaN(currentValues[feat]);
+}
+
+function buildQualityIndices(){
+  // Voltage imbalance (% max deviation from phase average) — NEMA-style definition
+  const vFeats = ['Vrms ph-n AN Avg', 'Vrms ph-n BN Avg', 'Vrms ph-n CN Avg'];
+  if (vFeats.every(featAvailable)){
+    const v = vFeats.map(f => currentValues[f]);
+    const vAvg = (v[0]+v[1]+v[2])/3;
+    const vUnb = vAvg > 0 ? Math.max(...v.map(x=>Math.abs(x-vAvg))) / vAvg * 100 : 0;
+    const vStatus = vUnb < 1 ? 'good' : vUnb <= 2 ? 'warn' : 'bad';
+    let vColor = vStatus === 'good' ? '#2ECC71' : vStatus === 'warn' ? '#F5A623' : '#F0523E';
+    setIndexCard('idx-vunb', 'idx-vunb-bar', vUnb.toFixed(2) + ' %', (vUnb/4)*100, vColor);
+    lastQualityIndices.voltage = {available: true, value: vUnb, status: vStatus, colorHex: vColor};
+  } else {
+    setIndexCard('idx-vunb', 'idx-vunb-bar', 'N/D', 0, '#8C9AB5');
+    lastQualityIndices.voltage = {available: false};
+  }
+
+  // Current imbalance (% max deviation from phase average)
+  const cFeats = ['Current A Avg', 'Current B Avg', 'Current C Avg'];
+  if (cFeats.every(featAvailable)){
+    const c = cFeats.map(f => currentValues[f]);
+    const cAvg = (c[0]+c[1]+c[2])/3;
+    const cUnb = cAvg > 0 ? Math.max(...c.map(x=>Math.abs(x-cAvg))) / cAvg * 100 : 0;
+    const cStatus = cUnb < 10 ? 'good' : cUnb <= 20 ? 'warn' : 'bad';
+    let cColor = cStatus === 'good' ? '#2ECC71' : cStatus === 'warn' ? '#F5A623' : '#F0523E';
+    setIndexCard('idx-cunb', 'idx-cunb-bar', cUnb.toFixed(2) + ' %', (cUnb/40)*100, cColor);
+    lastQualityIndices.current = {available: true, value: cUnb, status: cStatus, colorHex: cColor};
+  } else {
+    setIndexCard('idx-cunb', 'idx-cunb-bar', 'N/D', 0, '#8C9AB5');
+    lastQualityIndices.current = {available: false};
+  }
+
+  // Power factor index — note: this dataset's Cos Phi columns contain outlier values
+  // above 1.0 (up to 327.67), almost certainly sensor/overflow codes rather than real
+  // power factor. Flag those instead of pretending they're valid readings.
+  if (featAvailable('Cos Phi Total Avg')){
+    const fp = currentValues['Cos Phi Total Avg'];
+    if (fp > 1.2 || fp < 0){
+      setIndexCard('idx-fp', 'idx-fp-bar', fp.toFixed(2) + ' ⚠︎', 100, '#8C9AB5');
+      document.getElementById('idx-fp-note').textContent = 'Valor fuera del rango físico (0–1) — probable código de error del sensor en el dataset original, no un factor de potencia real.';
+      lastQualityIndices.powerFactor = {available: false, invalid: true, rawValue: fp};
+    } else {
+      const fpStatus = fp >= 0.95 ? 'good' : fp >= 0.85 ? 'warn' : 'bad';
+      let fpColor = fpStatus === 'good' ? '#2ECC71' : fpStatus === 'warn' ? '#F5A623' : '#F0523E';
+      setIndexCard('idx-fp', 'idx-fp-bar', fp.toFixed(2), fp*100, fpColor);
+      document.getElementById('idx-fp-note').textContent = 'Cos φ total · referencia: excelente ≥0.95, aceptable 0.85–0.95, revisar <0.85';
+      lastQualityIndices.powerFactor = {available: true, value: fp, status: fpStatus, colorHex: fpColor};
+    }
+  } else {
+    setIndexCard('idx-fp', 'idx-fp-bar', 'N/D', 0, '#8C9AB5');
+    document.getElementById('idx-fp-note').textContent = 'El archivo subido no incluye la columna "Cos Phi Total Avg".';
+    lastQualityIndices.powerFactor = {available: false};
+  }
+}
+
+/* ---------------- POWER QUALITY DIAGNOSIS (síntesis de los 3 índices) ---------------- */
+// El dashboard es, ante todo, un sistema de Supervisión de Calidad de la Energía:
+// esta función convierte los 3 índices técnicos (desequilibrio de voltaje, de
+// corriente, y factor de potencia) en un veredicto único y explicado en lenguaje
+// llano, además del detalle técnico de cada índice.
+function buildPowerQualityDiagnosis(){
+  const q = lastQualityIndices;
+  const details = [];
+  let nBad = 0, nWarn = 0, nGood = 0, nEvaluated = 0;
+
+  if(q.voltage && q.voltage.available){
+    nEvaluated++;
+    const v = q.voltage.value.toFixed(2);
+    if(q.voltage.status === 'bad'){ nBad++; details.push({icon:'🔴', text:`Desequilibrio de voltaje: <b>${v}%</b> — supera el 2%, el límite recomendado entre fases.`}); }
+    else if(q.voltage.status === 'warn'){ nWarn++; details.push({icon:'🟠', text:`Desequilibrio de voltaje: <b>${v}%</b> — dentro del rango aceptable (1–2%), pero cerca del límite.`}); }
+    else { nGood++; details.push({icon:'🟢', text:`Desequilibrio de voltaje: <b>${v}%</b> — dentro de lo excelente (&lt;1%).`}); }
+  } else {
+    details.push({icon:'⚪', text:'Desequilibrio de voltaje: no evaluable — el archivo cargado no incluye las tres fases de voltaje.'});
+  }
+
+  if(q.current && q.current.available){
+    nEvaluated++;
+    const c = q.current.value.toFixed(2);
+    if(q.current.status === 'bad'){ nBad++; details.push({icon:'🔴', text:`Desequilibrio de corriente: <b>${c}%</b> — supera el 20%, el límite recomendado entre fases.`}); }
+    else if(q.current.status === 'warn'){ nWarn++; details.push({icon:'🟠', text:`Desequilibrio de corriente: <b>${c}%</b> — dentro del rango aceptable (10–20%), pero cerca del límite.`}); }
+    else { nGood++; details.push({icon:'🟢', text:`Desequilibrio de corriente: <b>${c}%</b> — dentro de lo excelente (&lt;10%).`}); }
+  } else {
+    details.push({icon:'⚪', text:'Desequilibrio de corriente: no evaluable — el archivo cargado no incluye las tres fases de corriente.'});
+  }
+
+  if(q.powerFactor && q.powerFactor.available){
+    nEvaluated++;
+    const fp = q.powerFactor.value.toFixed(2);
+    if(q.powerFactor.status === 'bad'){ nBad++; details.push({icon:'🔴', text:`Factor de potencia: <b>${fp}</b> — por debajo de 0.85, indica uso ineficiente de la energía (posibles cargas reactivas).`}); }
+    else if(q.powerFactor.status === 'warn'){ nWarn++; details.push({icon:'🟠', text:`Factor de potencia: <b>${fp}</b> — aceptable (0.85–0.95), con margen de mejora.`}); }
+    else { nGood++; details.push({icon:'🟢', text:`Factor de potencia: <b>${fp}</b> — excelente (≥0.95).`}); }
+  } else if(q.powerFactor && q.powerFactor.invalid){
+    details.push({icon:'⚪', text:'Factor de potencia: no evaluable — el valor registrado está fuera del rango físico posible (probable error del sensor).'});
+  } else {
+    details.push({icon:'⚪', text:'Factor de potencia: no evaluable — el archivo cargado no incluye esta columna.'});
+  }
+
+  let verdict, verdictColor, verdictText;
+  if(nEvaluated === 0){
+    verdict = 'SIN DATOS SUFICIENTES';
+    verdictColor = '#8C9AB5';
+    verdictText = 'El archivo cargado no trae las variables necesarias (voltaje trifásico, corriente trifásica o factor de potencia) para emitir un veredicto de calidad de la energía.';
+  } else if(nBad > 0){
+    verdict = 'DEFICIENTE';
+    verdictColor = '#F0523E';
+    verdictText = `Al menos un índice (${nBad} de ${nEvaluated} evaluados) está fuera del rango recomendado. Se sugiere revisión técnica de la instalación.`;
+  } else if(nWarn > 0){
+    verdict = 'ACEPTABLE';
+    verdictColor = '#F5A623';
+    verdictText = `Todos los índices evaluados están dentro de rango, pero ${nWarn} de ${nEvaluated} se encuentran cerca del límite recomendado. Conviene vigilar su evolución.`;
+  } else {
+    verdict = 'BUENA';
+    verdictColor = '#2ECC71';
+    verdictText = `Los ${nEvaluated} índices evaluados están dentro de los rangos de excelencia. No se detectan señales de mala calidad de energía.`;
+  }
+
+  return {verdict, verdictColor, verdictText, details, nEvaluated, nGood, nWarn, nBad};
+}
+
+/* ---------------- KPI STRIP ---------------- */
+function buildKPIs(meta){
+  const currFeats = ['Current A Avg', 'Current B Avg', 'Current C Avg'];
+  if (currFeats.every(featAvailable)){
+    const avgCurrent = (currentValues['Current A Avg'] + currentValues['Current B Avg'] + currentValues['Current C Avg']) / 3;
+    document.getElementById('kpi-current').textContent = fmt(avgCurrent, 'Current A Avg');
+  } else {
+    document.getElementById('kpi-current').textContent = 'N/D';
+  }
+
+  const voltFeats = ['Vrms ph-n AN Avg', 'Vrms ph-n BN Avg'];
+  if (voltFeats.every(featAvailable)){
+    const avgVoltage = (currentValues['Vrms ph-n AN Avg'] + currentValues['Vrms ph-n BN Avg']) / 2;
+    document.getElementById('kpi-voltage').textContent = fmt(avgVoltage, 'Vrms ph-n AN Avg');
+  } else {
+    document.getElementById('kpi-voltage').textContent = 'N/D';
+  }
+
+  document.getElementById('kpi-power').textContent = featAvailable('Apparent Power Total Avg')
+    ? fmt(currentValues['Apparent Power Total Avg'], 'Apparent Power Total Avg') : 'N/D';
+  document.getElementById('kpi-cosphi').textContent = featAvailable('Cos Phi Total Avg')
+    ? fmt(currentValues['Cos Phi Total Avg'], 'Cos Phi Total Avg') : 'N/D';
+  const estadoEl = document.getElementById('kpi-estado');
+  estadoEl.textContent = meta.label;
+  estadoEl.style.color = meta.colorHex;
+  document.getElementById('kpi-estado-sub').textContent = meta.riesgo;
+}
+
+/* ---------------- PATH VISUALIZATION (root -> leaf) ---------------- */
+function buildPathViz(result, meta){
+  const host = document.getElementById('path-viz');
+  host.innerHTML = '';
+  result.path.forEach((step, i)=>{
+    const info = LABELS[step.feature] || {name: step.feature, unit:''};
+    const dirSym = step.direction === 'left' ? '≤' : '>';
+    const div = document.createElement('div');
+    div.className = 'path-node' + (i === 0 ? ' root' : '');
+    div.innerHTML = `
+      <div class="pn-eyebrow">${i === 0 ? 'Nodo raíz' : 'Nodo ' + (i+1)}</div>
+      <div class="pn-feat">${info.name}</div>
+      <div class="pn-cond">${fmt(step.realVal, step.feature)} ${dirSym} ${fmt(step.thresholdReal, step.feature)}</div>
+    `;
+    host.appendChild(div);
+  });
+  const leaf = document.createElement('div');
+  leaf.className = 'path-node leaf';
+  leaf.style.background = meta.colorHex + '1A';
+  leaf.style.borderColor = meta.colorHex + '66';
+  leaf.innerHTML = `
+    <div class="pn-eyebrow" style="color:${meta.colorHex}">Hoja final</div>
+    <div class="pn-feat">Clasificación asignada</div>
+    <div class="pn-cond" style="color:${meta.colorHex}">${meta.label}</div>
+  `;
+  host.appendChild(leaf);
+}
+
+/* ---------------- TENDENCIA REAL DE LA SESIÓN (soporte a decisión) ---------------- */
+// Cada punto guarda un snapshot completo de los valores de esa lectura (no un resumen fijo),
+// para poder elegir después, en el momento de graficar, qué variables sí están disponibles
+// en el árbol/dataset vigente — sin depender de que existan columnas con nombres exactos.
+function pushValueHistory(cls, values){
+  valueHistory.push({ ts: new Date(), cls, values: {...(values || currentValues)} });
+  if (valueHistory.length > 30) valueHistory.shift();
+}
+
+// Serie "clásica": las 4 variables de referencia del panel original, solo si el dataset
+// vigente trae esa columna exacta (Current A Avg, Vrms ph-n AN Avg, etc.).
+function classicTrendSeries(){
+  return [
+    {key:'Current A Avg', label:'Corriente prom. (Fase A)', color:'#37B6E8'},
+    {key:'Vrms ph-n AN Avg', label:'Voltaje prom. (Fase A)', color:'#2ECC71'},
+    {key:'Apparent Power Total Avg', label:'Potencia aparente', color:'#F5A623'},
+    // Cos φ se recorta a su rango físico real (0–1) al graficar; los códigos de error de sensor (>1) ya se
+    // advierten aparte en el KPI y en los sliders, y no deben distorsionar la escala de esta gráfica.
+    {key:'Cos Phi Total Avg', label:'Cos φ total (recortado a 0–1)', color:'#6C5CE7', min:0, max:1},
+  ]
+    .filter(s => TREE.feature_stats[s.key] !== undefined)
+    .map(s => ({ ...s,
+      min: s.min !== undefined ? s.min : TREE.feature_stats[s.key].min,
+      max: s.max !== undefined ? s.max : TREE.feature_stats[s.key].max,
+    }));
+}
+
+// Respaldo: si el archivo cargado no trae NINGUNA de esas 4 variables clásicas (nombres de
+// columna distintos), en vez de dejar el panel vacío se grafican hasta 4 variables reales
+// que el árbol sí está usando (TREE.used_features), con su propio rango real.
+function fallbackTrendSeries(){
+  const palette = ['#37B6E8', '#2ECC71', '#F5A623', '#6C5CE7', '#F0523E'];
+  return TREE.used_features
+    .filter(f => TREE.feature_stats[f] !== undefined)
+    .slice(0, 4)
+    .map((f, i) => ({
+      key: f,
+      label: (LABELS[f] && LABELS[f].name) || f,
+      color: palette[i % palette.length],
+      min: TREE.feature_stats[f].min,
+      max: TREE.feature_stats[f].max,
+      isFallback: true,
+    }));
+}
+
+function buildTrendChart(){
+  const host = document.getElementById('trend-chart');
+  const legend = document.getElementById('trend-legend');
+
+  if (valueHistory.length < 2){
+    host.innerHTML = '<div style="text-align:center; color:#5B6A87; font-size:12.5px; padding:34px 0;">Mueve un control o carga un ejemplo — se necesitan al menos 2 lecturas para trazar una tendencia.</div>';
+    legend.innerHTML = '';
+    return;
+  }
+
+  let series = classicTrendSeries();
+  let usingFallback = false;
+  if (series.length === 0){
+    series = fallbackTrendSeries();
+    usingFallback = true;
+  }
+
+  if (series.length === 0){
+    // El árbol vigente no tiene ninguna variable numérica utilizable para graficar
+    // (caso extremo: archivo con muy pocas columnas válidas).
+    host.innerHTML = '<div style="text-align:center; color:#5B6A87; font-size:12.5px; padding:34px 0;">El archivo cargado no tiene variables numéricas que se puedan graficar en esta tendencia.</div>';
+    legend.innerHTML = '';
+    return;
+  }
+
+  const w = 640, h = 150, pad = 8;
+  const n = valueHistory.length;
+  const stepX = n > 1 ? (w - pad*2) / (n - 1) : 0;
+  function yFor(v, s){
+    const clipped = Math.max(s.min, Math.min(s.max, v));
+    const norm = (s.max > s.min) ? (clipped - s.min) / (s.max - s.min) : 0.5;
+    return h - pad - norm*(h - pad*2);
+  }
+  let svg = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">`;
+  for(let gy=0; gy<=3; gy++){
+    const y = pad + gy*(h-pad*2)/3;
+    svg += `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="#1B2338" stroke-width="1"/>`;
+  }
+  const drawnSeries = [];
+  series.forEach(s=>{
+    const pts = valueHistory
+      .map((pt,i)=>({i, v: pt.values[s.key]}))
+      .filter(p => typeof p.v === 'number' && !Number.isNaN(p.v));
+    if(pts.length < 2) return; // esta lectura en particular no trae esa columna con valor numérico
+    drawnSeries.push(s);
+    let d = '';
+    pts.forEach((p,idx)=>{
+      const x = pad + p.i*stepX;
+      const y = yFor(p.v, s);
+      d += (idx===0?'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    });
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+    const lastPt = pts[pts.length-1];
+    const lx = pad + lastPt.i*stepX;
+    const ly = yFor(lastPt.v, s);
+    svg += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#0B1220" stroke-width="1.5"/>`;
+  });
+  svg += `</svg>`;
+  host.innerHTML = svg;
+
+  if (drawnSeries.length === 0){
+    legend.innerHTML = '<span style="color:#5B6A87;">Ninguna variable coincidente tiene suficientes lecturas numéricas todavía.</span>';
+  } else {
+    const legendItems = drawnSeries.map(s=>`<span style="margin-right:16px; display:inline-flex; align-items:center;"><span class="legend-dot" style="background:${s.color}"></span>${s.label}</span>`).join('');
+    const fallbackNote = usingFallback
+      ? '<div style="margin-top:6px; color:#8C9AB5;">⚠︎ El archivo cargado no incluye las 4 variables clásicas de este panel (corriente, voltaje, potencia, cos φ) — se muestran en su lugar las variables reales que el árbol sí está usando.</div>'
+      : '';
+    legend.innerHTML = legendItems + fallbackNote;
+  }
+}
+
+function buildConfidence(result){
+  const total = TREE.nodes[0].samples; // registros de entrenamiento en el nodo raíz del árbol vigente
+  const leafSamples = result.leafSamples;
+  const pct = total > 0 ? (leafSamples/total)*100 : 0;
+  const el = document.getElementById('conf-value');
+  const bar = document.getElementById('conf-bar');
+  const note = document.getElementById('conf-note');
+  const totalFmt = total.toLocaleString('es-CO');
+  el.textContent = pct.toFixed(1) + '%';
+  bar.style.width = Math.max(2, Math.min(100, pct*2)) + '%';
+  let color, msg;
+  if (leafSamples >= 100){
+    color = '#2ECC71';
+    msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — clasificación bien sustentada para apoyar una decisión.`;
+  } else if (leafSamples >= 10){
+    color = '#F5A623';
+    msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — respaldo moderado, verificar con otra fuente antes de actuar.`;
+  } else {
+    color = '#F0523E';
+    msg = `⚠︎ Solo <b>${leafSamples}</b> de ${totalFmt} lecturas históricas cayeron en este mismo nodo — caso poco frecuente en el entrenamiento. No tomar una decisión operativa basada únicamente en este resultado.`;
+  }
+  el.style.color = color;
+  bar.style.background = color;
+  note.innerHTML = msg;
+}
+
+/* ---------------- MAIN RECOMPUTE ---------------- */
+function recompute(opts){
+  opts = opts || {};
+  const result = traverseTree(currentValues);
+  lastResult = result;
+  const cls = result.predicted;
+  const meta = CLASS_META[cls];
+
+  const dot = document.getElementById('semaforo-dot');
+  dot.style.background = meta.colorHex;
+  dot.style.setProperty('--dot-ring', meta.colorHex + '33');
+  dot.style.setProperty('--dot-glow', meta.colorHex + '99');
+
+  document.getElementById('status-text').textContent = meta.statusText;
+  document.getElementById('status-text').style.color = meta.colorHex;
+  document.getElementById('status-sub').textContent = meta.statusSub;
+  document.getElementById('meta-nodes').textContent = TREE.depth + ' niveles, ' + TREE.n_leaves + ' hojas';
+
+  document.getElementById('indicador').textContent = meta.label;
+  document.getElementById('indicador').style.color = meta.colorHex;
+
+  const pill = document.getElementById('pill-riesgo');
+  pill.textContent = meta.riesgo;
+  pill.style.setProperty('--pill-fg', meta.colorHex);
+  pill.style.setProperty('--pill-bg', meta.colorHex + '1A');
+  pill.style.setProperty('--pill-border', meta.colorHex + '55');
+
+  const order = {low:0, medium:1, high:2};
+  let arrow = '→', trendText = 'Primera lectura de la sesión';
+  if(lastClass !== null){
+    if(order[cls] > order[lastClass]){ arrow='↑'; trendText='Incremento respecto a la lectura anterior'; }
+    else if(order[cls] < order[lastClass]){ arrow='↓'; trendText='Disminución respecto a la lectura anterior'; }
+    else { arrow='→'; trendText='Sin variación respecto a la lectura anterior'; }
+  }
+  document.getElementById('trend-arrow').textContent = arrow;
+  document.getElementById('trend-arrow').style.color = meta.colorHex;
+  document.getElementById('trend-text').textContent = trendText;
+
+  document.getElementById('diag-text').innerHTML = buildDiagnosis(cls, result.path);
+  buildKPIs(meta);
+  buildPathViz(result, meta);
+  buildQualityIndices();
+  pushValueHistory(cls);
+  buildTrendChart();
+  buildConfidence(result);
+
+  // gauge: position within the class's zone, based on the two primary features' normalized average
+  let primaryFeats = TREE.used_features.filter(f => LABELS[f] && LABELS[f].primary && featAvailable(f));
+  if (primaryFeats.length === 0) primaryFeats = TREE.used_features.filter(featAvailable);
+  const avgNorm = primaryFeats.length
+    ? primaryFeats.reduce((s,f)=> s + normalize(f, currentValues[f]), 0) / primaryFeats.length
+    : (order[cls] + 0.5) / 3; // sin variables numéricas de referencia, usar la clase predicha
+  const gaugePct = Math.max(2, Math.min(98, avgNorm*100*3.2));
+  buildGauge(gaugePct, meta.colorHex);
+
+  // comparison chart + variable cards: primary two always + any secondary feature that appeared in this path
+  const pathFeats = [...new Set(result.path.map(p=>p.feature))];
+  const showFeats = [...new Set([...primaryFeats, ...pathFeats])];
+  buildComparisonChart(showFeats, pathFeats, meta.colorHex);
+
+  const varContainer = document.getElementById('var-container');
+  varContainer.innerHTML = '';
+  showFeats.forEach(feat=>{
+    const stats = TREE.feature_stats[feat];
+    const info = LABELS[feat];
+    const val = currentValues[feat];
+    const pct = Math.max(0, Math.min(100, ((val - stats.min) / (stats.max - stats.min)) * 100));
+    const inPath = pathFeats.includes(feat);
+    const color = inPath ? meta.colorHex : '#4C5A78';
+    const div = document.createElement('div');
+    div.className = 'varcard';
+    div.innerHTML = `
+      <div class="varcard-head">
+        <span class="varcard-name">${info.name}</span>
+        <span class="varcard-value mono">${fmt(val, feat)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+      <div class="varcard-status" style="color:${color}">${inPath ? 'Usada en esta decisión' : 'Dentro de rango — no determinante'}</div>
+    `;
+    varContainer.appendChild(div);
+  });
+
+  const explainBody = document.getElementById('explain-body');
+  explainBody.innerHTML = '';
+  const ol = document.createElement('ol');
+  result.path.forEach(step=>{
+    const li = document.createElement('li');
+    li.innerHTML = explainStep(step);
+    ol.appendChild(li);
+  });
+  const finalLi = document.createElement('li');
+  finalLi.innerHTML = `En conjunto, esta secuencia de condiciones lleva al árbol a clasificar la lectura como <b>${meta.label}</b>.`;
+  ol.appendChild(finalLi);
+  explainBody.appendChild(ol);
+
+  const recList = document.getElementById('rec-list');
+  recList.innerHTML = '';
+  buildRecommendations(cls, result.path).forEach(r=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="rec-dot"></span><span>${r.icon} ${r.text}</span>`;
+    recList.appendChild(li);
+  });
+
+  if(!opts.skipHistoryAppend){
+    if(cls !== lastClass){
+      history.push({cls, ts: new Date(), path: result.path, values: {...currentValues}});
+      if(history.length > 24) history.shift();
+    } else if(history.length === 0){
+      history.push({cls, ts: new Date(), path: result.path, values: {...currentValues}});
+    }
+  }
+  lastClass = cls;
+  renderHistory();
+  buildDonut();
+}
+
+function renderHistory(){
+  const histWrap = document.getElementById('hist-wrap');
+  histWrap.innerHTML = '';
+  const order = {low:0, medium:1, high:2};
+  const MAX_BARS = 120;
+  let shown = history.length ? history : [{cls:'low'}];
+  if(shown.length > MAX_BARS){
+    const step = shown.length / MAX_BARS;
+    const sampled = [];
+    for(let i=0; i<MAX_BARS; i++) sampled.push(shown[Math.floor(i*step)]);
+    shown = sampled;
+  }
+  shown.forEach(h=>{
+    const bar = document.createElement('div');
+    bar.className = 'hist-bar';
+    const level = order[h.cls];
+    bar.style.height = (30 + level*35) + '%';
+    bar.style.background = CLASS_META[h.cls].colorHex;
+    histWrap.appendChild(bar);
+  });
+  const note = document.getElementById('hist-sample-note');
+  if(note){
+    note.textContent = history.length > MAX_BARS
+      ? `Mostrando ${MAX_BARS} muestras representativas de ${history.length} lecturas.`
+      : '';
+  }
+}
+
+/* ---------------- MODAL ---------------- */
+function openModal(title, bodyHtml){
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+document.getElementById('modal-close').addEventListener('click', ()=>{
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'modal-overlay') document.getElementById('modal-overlay').classList.remove('open');
+});
+
+/* ---------------- ACTION BUTTONS (real, tree-driven) ---------------- */
+document.getElementById('btn-detalle').addEventListener('click', ()=>{
+  const r = lastResult; const meta = CLASS_META[r.predicted];
+  let rows = r.path.map((s,i)=>{
+    const info = LABELS[s.feature];
+    const dirWord = s.direction==='left' ? '≤' : '>';
+    return `<tr><td>${i+1}</td><td>${info.name}</td><td>${fmt(s.realVal, s.feature)}</td><td>${dirWord} ${fmt(s.thresholdReal, s.feature)}</td></tr>`;
+  }).join('');
+  const body = `
+    <h4>Resultado</h4>
+    <p>Clase asignada: <b style="color:${meta.colorHex}">${meta.label}</b> — el árbol la ubicó en una hoja respaldada por ${r.leafSamples} lecturas similares del entrenamiento.</p>
+    <h4>Camino recorrido en el árbol (de la primera pregunta a la conclusión final)</h4>
+    <table><tr><th>#</th><th>Variable evaluada</th><th>Valor actual</th><th>Condición que cumplió</th></tr>${rows}</table>
+    <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">Este es el recorrido exacto que siguió el árbol de decisión entrenado (${TREE.depth} niveles de profundidad, ${TREE.n_leaves} posibles conclusiones) para llegar a este resultado.</p>
+  `;
+  openModal('Detalle del recorrido del árbol', body);
+});
+
+document.getElementById('btn-analizar').addEventListener('click', ()=>{
+  const r = lastResult; const meta = CLASS_META[r.predicted];
+  const det = determinantFeatures(r.path);
+  let rows = det.map((feat,i)=>{
+    const info = LABELS[feat];
+    const weightNote = (feat==='Current A Avg' || feat==='Apparent Power Total Avg') ? 'Alta influencia en la decisión' : 'Variable de verificación adicional';
+    return `<tr><td>${i+1}</td><td>${info.name}</td><td>${fmt(currentValues[feat], feat)}</td><td>${weightNote}</td></tr>`;
+  }).join('');
+  const body = `
+    <h4>Resumen automático</h4>
+    <p>Para esta lectura, el árbol evaluó <b>${det.length}</b> variable(s) antes de llegar a la clasificación <b style="color:${meta.colorHex}">${meta.label}</b>. Se listan en el orden en que el árbol las evaluó: la primera es la más determinante, por estar más cerca de la raíz del árbol.</p>
+    <table><tr><th>#</th><th>Variable</th><th>Valor</th><th>Rol en la decisión</th></tr>${rows}</table>
+    <h4>Qué significa este resultado</h4>
+    <p>${buildDiagnosis(r.predicted, r.path)}</p>
+  `;
+  openModal('Análisis del registro actual', body);
+});
+
+document.getElementById('btn-historico').addEventListener('click', ()=>{
+  if(history.length === 0){
+    openModal('Comparar histórico', '<p>Aún no hay suficientes lecturas registradas en esta sesión.</p>');
+    return;
+  }
+  const counts = {low:0, medium:0, high:0};
+  history.forEach(h=>counts[h.cls]++);
+  let rows = history.slice().reverse().map(h=>{
+    const meta = CLASS_META[h.cls];
+    return `<tr><td>${h.ts.toLocaleTimeString('es-CO')}</td><td style="color:${meta.colorHex}; font-weight:600;">${meta.label}</td><td>${h.path.length} condiciones evaluadas</td></tr>`;
+  }).join('');
+  const body = `
+    <h4>Distribución de clasificaciones en esta sesión</h4>
+    <p>Bajo: <b>${counts.low}</b> · Medio: <b>${counts.medium}</b> · Alto: <b>${counts.high}</b> (de un total de ${history.length} lecturas registradas)</p>
+    <h4>Lecturas registradas (la más reciente primero)</h4>
+    <table><tr><th>Hora</th><th>Clasificación</th><th>Condiciones evaluadas</th></tr>${rows}</table>
+  `;
+  openModal('Comparación con el histórico de la sesión', body);
+});
+
+document.getElementById('btn-exportar').addEventListener('click', ()=>{
+  const r = lastResult; const meta = CLASS_META[r.predicted];
+  const lines = [];
+  lines.push('REPORTE DE CLASIFICACIÓN DE CALIDAD DE ENERGÍA');
+  lines.push('Generado: ' + new Date().toLocaleString('es-CO'));
+  lines.push('Medidor: Sub-estación 03 · Fase Principal');
+  lines.push('');
+  lines.push('Clasificación: ' + meta.label.toUpperCase() + ' (' + meta.riesgo + ')');
+  lines.push('');
+  lines.push('Diagnóstico del árbol de decisión: ' + buildDiagnosis(r.predicted, r.path).replace(/<\/?b>/g,''));
+  lines.push('');
+  lines.push('Recorrido del árbol de decisión (variable evaluada → condición cumplida):');
+  r.path.forEach((s,i)=>{
+    const info = LABELS[s.feature];
+    const dirWord = s.direction==='left' ? '<=' : '>';
+    lines.push(`  ${i+1}. ${info.name} = ${fmt(s.realVal,s.feature)}  (${dirWord} ${fmt(s.thresholdReal,s.feature)})`);
+  });
+  lines.push('');
+  lines.push('Recomendaciones:');
+  buildRecommendations(r.predicted, r.path).forEach(rec => lines.push('  - ' + rec.text));
+  const text = lines.join('\n');
+  const body = `
+    <h4>Reporte generado</h4>
+    <p style="color:#8C9AB5;">Selecciona el texto y cópialo, o usa el botón para copiarlo al portapapeles.</p>
+    <textarea readonly id="export-textarea">${text}</textarea>
+    <button class="copy-btn" id="copy-btn">Copiar al portapapeles</button>
+  `;
+  openModal('Exportar reporte', body);
+  document.getElementById('copy-btn').addEventListener('click', ()=>{
+    const ta = document.getElementById('export-textarea');
+    ta.select();
+    try{
+      navigator.clipboard.writeText(ta.value);
+      document.getElementById('copy-btn').textContent = 'Copiado ✓';
+    }catch(e){
+      document.execCommand('copy');
+      document.getElementById('copy-btn').textContent = 'Copiado ✓';
+    }
+  });
+});
+
+document.getElementById('btn-calidad').addEventListener('click', ()=>{
+  const pq = buildPowerQualityDiagnosis();
+  const rows = pq.details.map(d => `<li>${d.icon} ${d.text}</li>`).join('');
+  const body = `
+    <h4>Veredicto de calidad de la energía</h4>
+    <p style="font-size:17px; font-weight:700; color:${pq.verdictColor};">${pq.verdict}</p>
+    <p>${pq.verdictText}</p>
+    <h4>Detalle por índice</h4>
+    <ul style="list-style:none; margin:0; padding:0; line-height:1.9;">${rows}</ul>
+    <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">Este veredicto es independiente de la clasificación de consumo (bajo/medio/alto): evalúa específicamente el desequilibrio de voltaje, el desequilibrio de corriente y el factor de potencia de la lectura actual, con los umbrales de referencia mostrados en la sección "Índices de calidad".</p>
+  `;
+  openModal('Diagnóstico de calidad de la energía', body);
+});
+
+document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
+  const r = lastResult; const meta = CLASS_META[r.predicted];
+  const steps = r.path.map(explainStep).map(s=>`<li>${s}</li>`).join('');
+  const recs = buildRecommendations(r.predicted, r.path).map(x=>`<li>${x.icon} ${x.text}</li>`).join('');
+  const pq = buildPowerQualityDiagnosis();
+  const pqRows = pq.details.map(d => `<li>${d.icon} ${d.text}</li>`).join('');
+  const body = `
+    <h4>Diagnóstico ampliado</h4>
+    <p>${buildDiagnosis(r.predicted, r.path)}</p>
+    <h4>Reglas que aplicó el árbol de decisión, paso a paso</h4>
+    <ol>${steps}<li>En conjunto, estas condiciones llevan al sistema a asignar la clase <b style="color:${meta.colorHex}">${meta.label}</b>.</li></ol>
+    <h4>Calidad de la energía (voltaje, corriente y factor de potencia)</h4>
+    <p>Veredicto: <b style="color:${pq.verdictColor}">${pq.verdict}</b> — ${pq.verdictText}</p>
+    <ul style="list-style:none; margin:0 0 4px 0; padding:0; line-height:1.9;">${pqRows}</ul>
+    <h4>Recomendaciones según este resultado</h4>
+    <ol>${recs}</ol>
+  `;
+  openModal('Diagnóstico generado por el sistema', body);
+});
+
+/* ---------------- PRESETS ---------------- */
+function loadPreset(key){
+  const preset = PRESETS[key];
+  TREE.feature_order.forEach(feat=>{
+    if(preset[feat] !== undefined) currentValues[feat] = preset[feat];
+  });
+  refreshSliderDisplays();
+  document.querySelectorAll('.demo-select button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.c === key);
+  });
+  recompute();
+}
+document.querySelectorAll('.demo-select button').forEach(b=>{
+  b.addEventListener('click', ()=>loadPreset(b.dataset.c));
+});
+
+/* ---------------- CARGA DE HISTÓRICO: REENTRENAMIENTO REAL (Pyodide) ---------------- */
+const MAX_HISTORY_ROWS = 2000; // límite razonable para no saturar memoria/DOM
+
+function setUploadStatus(msg, isError){
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red)' : 'var(--ink-dim)';
+}
+
+function setUploadError(msg){
+  const el = document.getElementById('upload-errors');
+  if(!msg){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = msg;
+}
+
+// Traducción fiel del notebook "código madre" (limpieza, normalización Min-Max,
+// binning del target, train/test split 80/20 y DecisionTreeClassifier random_state=42).
+// Se ejecuta con pandas + scikit-learn reales dentro del navegador vía Pyodide.
+const PYTHON_PIPELINE_CODE = `
+import json, io, sys
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+def _run():
+    with open('/tmp/uploaded_data', 'rb') as fh:
+        raw_bytes = fh.read()
+    fname = uploaded_filename.lower()
+
+    if fname.endswith('.csv'):
+        dt = pd.read_csv(io.BytesIO(raw_bytes))
+    else:
+        try:
+            dt = pd.read_excel(io.BytesIO(raw_bytes), sheet_name='power-quality-meter', engine='openpyxl')
+        except Exception:
+            dt = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=0, engine='openpyxl')
+
+    columnas_a_eliminar = ['Unnamed: 0', 'Date', 'Time', 'Vrms ph-n NG Avg']
+    dt = dt.drop(columns=columnas_a_eliminar, errors='ignore')
+
+    columnas_numericas = dt.select_dtypes(include=['float64', 'int64']).columns
+    columnas_numericas = columnas_numericas.drop(['id', 'contratos'], errors='ignore')
+    if len(columnas_numericas) < 2:
+        raise ValueError('El archivo no tiene suficientes columnas numéricas para entrenar el árbol.')
+
+    dt_raw = dt.copy()  # valores reales, antes de normalizar
+
+    stats_reales = {}
+    for col in columnas_numericas:
+        serie = pd.to_numeric(dt_raw[col], errors='coerce')
+        stats_reales[col] = {
+            'min': float(np.nanmin(serie.values)) if serie.notna().any() else 0.0,
+            'max': float(np.nanmax(serie.values)) if serie.notna().any() else 1.0,
+            'mean': float(serie.mean()) if serie.notna().any() else 0.0,
+            'median': float(serie.median()) if serie.notna().any() else 0.0,
+        }
+
+    # Normalización Min-Max (idéntica al notebook madre)
+    for columna in columnas_numericas:
+        mn = dt[columna].min(); mx = dt[columna].max()
+        rng = (mx - mn) if (mx - mn) != 0 else 1.0
+        dt[columna] = (dt[columna] - mn) / rng
+
+    # --- Detección automática de la variable objetivo ---
+    # Traducción fiel de 'detectar_target_por_correlacion' del notebook madre:
+    # se calcula la correlación de cada variable numérica contra todas las
+    # demás y se elige como target la que acumula mayor correlación total
+    # absoluta (la más "explicada" por el resto del sistema). Así, si el
+    # archivo subido no trae la columna 'Active Power Total Avg' (o trae
+    # otras variables), el pipeline sigue funcionando igual que en el
+    # notebook original, en vez de fallar con un nombre fijo.
+    corr = dt[columnas_numericas].corr(numeric_only=True)
+    if corr.empty:
+        raise ValueError('No hay variables numéricas suficientes en el archivo para detectar la variable objetivo.')
+    correlacion_total = corr.abs().sum().sort_values(ascending=False)
+
+    target_column = 'Active Power Total Avg'
+    if target_column not in dt.columns:
+        target_column = correlacion_total.index[0]
+
+    dt[target_column] = pd.to_numeric(dt[target_column], errors='coerce')
+    dt = dt.dropna(subset=[target_column])
+    dt_raw = dt_raw.loc[dt.index]
+
+    if len(dt) < 15:
+        raise ValueError('El archivo tiene muy pocas filas válidas (' + str(len(dt)) + ') para entrenar el árbol.')
+
+    # Los cortes originales del notebook (0.088336 / 0.103580) eran fijos para el
+    # dataset de entrenamiento original. Aquí se recalculan como terciles del
+    # nuevo archivo, para conservar la misma idea de low/medium/high balanceados.
+    try:
+        cats, edges = pd.qcut(dt[target_column], q=3, retbins=True, duplicates='drop')
+        if len(edges) - 1 != 3:
+            raise ValueError('terciles colapsados')
+        dt[target_column] = pd.qcut(dt[target_column], q=3, labels=['low', 'medium', 'high'], duplicates='drop')
+    except Exception:
+        dt[target_column] = pd.cut(dt[target_column], bins=3, labels=['low', 'medium', 'high'])
+        edges = None
+
+    columnas_numericas2 = dt.select_dtypes(include=['float64', 'int64']).columns
+    columnas_numericas2 = columnas_numericas2.drop(['id', 'contratos'], errors='ignore')
+    X = dt[columnas_numericas2].copy()
+    y = dt[target_column]
+
+    mask = X.notna().all(axis=1) & y.notna()
+    X = X[mask]; y = y[mask]
+    dt_raw = dt_raw.loc[X.index]
+
+    if len(X) < 15 or y.nunique() < 2:
+        raise ValueError('No hay suficientes datos válidos o variedad de clases para entrenar el árbol.')
+
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y)
+    except Exception:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42)
+
+    decision_tree = DecisionTreeClassifier(random_state=42)
+    decision_tree.fit(X_train, y_train)
+    y_pred = decision_tree.predict(X_test)
+    test_accuracy = float(accuracy_score(y_test, y_pred))
+
+    tree_ = decision_tree.tree_
+    feature_names = list(X.columns)
+    classes = list(decision_tree.classes_)
+
+    nodes = [None] * tree_.node_count
+    stack = [0]
+    while stack:
+        nid = stack.pop()
+        left = int(tree_.children_left[nid])
+        right = int(tree_.children_right[nid])
+        if left == -1 and right == -1:
+            value = tree_.value[nid][0]
+            cls = str(classes[int(np.argmax(value))])
+            nodes[nid] = {'id': nid, 'leaf': True, 'class': cls, 'samples': int(tree_.n_node_samples[nid])}
+        else:
+            feat_name = feature_names[int(tree_.feature[nid])]
+            nodes[nid] = {
+                'id': nid, 'leaf': False, 'feature': feat_name,
+                'threshold': float(tree_.threshold[nid]), 'left': left, 'right': right,
+                'samples': int(tree_.n_node_samples[nid])
+            }
+            stack.append(left); stack.append(right)
+
+    used_features = sorted(set(n['feature'] for n in nodes if not n['leaf']))
+
+    records = []
+    for idx in X.index:
+        vals = {f: float(dt_raw.loc[idx, f]) for f in feature_names}
+        records.append({'values': vals})
+
+    result = {
+        'feature_order': feature_names,
+        'used_features': used_features,
+        'feature_stats': stats_reales,
+        'nodes': nodes,
+        'depth': int(decision_tree.get_depth()),
+        'n_leaves': int(decision_tree.get_n_leaves()),
+        'test_accuracy': test_accuracy,
+        'n_rows_used': int(len(X)),
+        'n_features_total': int(len(columnas_numericas)),
+        'target_column_usado': str(target_column),
+        'records': records,
+    }
+    return json.dumps(result)
+
+try:
+    _out = _run()
+except Exception as _e:
+    _out = json.dumps({'error': str(_e)})
+_out
+`;
+
+let pyodideReadyPromise = null;
+function getPyodideInstance(){
+  if(!pyodideReadyPromise){
+    setUploadStatus('Cargando entorno Python en el navegador (primera vez, ~30–90s)…', false);
+    pyodideReadyPromise = loadPyodide().then(async (pyodide) => {
+      setUploadStatus('Instalando pandas y scikit-learn…', false);
+      // openpyxl no es un paquete pre-compilado de Pyodide (por eso fallaba con
+      // loadPackage); se instala aparte vía micropip, y solo si el archivo lo necesita.
+      await pyodide.loadPackage(['numpy', 'pandas', 'scikit-learn', 'micropip']);
+      return pyodide;
+    }).catch(err => {
+      pyodideReadyPromise = null; // permitir reintento si falla la carga
+      throw err;
+    });
+  }
+  return pyodideReadyPromise;
+}
+
+let openpyxlReadyPromise = null;
+function ensureOpenpyxl(pyodide){
+  if(!openpyxlReadyPromise){
+    setUploadStatus('Instalando soporte para Excel (openpyxl)…', false);
+    openpyxlReadyPromise = pyodide.pyimport('micropip').install('openpyxl').catch(err => {
+      openpyxlReadyPromise = null;
+      throw err;
+    });
+  }
+  return openpyxlReadyPromise;
+}
+
+function applyTrainedModel(result){
+  // Reemplaza el árbol global por el recién entrenado con el archivo subido
+  TREE = {
+    feature_order: result.feature_order,
+    used_features: result.used_features,
+    feature_stats: result.feature_stats,
+    nodes: result.nodes,
+    depth: result.depth,
+    n_leaves: result.n_leaves,
+  };
+  // Cualquier variable nueva que no tenga etiqueta en español recibe una genérica
+  result.feature_order.forEach(f=>{
+    if(!LABELS[f]) LABELS[f] = {name: f, unit: ''};
+  });
+
+  let newHistory = result.records.map(r => {
+    const res = traverseTree(r.values);
+    return {cls: res.predicted, ts: new Date(), path: res.path, values: r.values};
+  });
+
+  let truncatedNote = '';
+  if(newHistory.length > MAX_HISTORY_ROWS){
+    const step = newHistory.length / MAX_HISTORY_ROWS;
+    const sampled = [];
+    for(let i=0; i<MAX_HISTORY_ROWS; i++) sampled.push(newHistory[Math.floor(i*step)]);
+    truncatedNote = ` (muestra de ${MAX_HISTORY_ROWS} de ${newHistory.length} registros)`;
+    newHistory = sampled;
+  }
+
+  history = newHistory;
+  // La tendencia de sesión se reinicia con las últimas lecturas del archivo recién entrenado,
+  // en vez de arrastrar puntos calculados con el árbol/dataset anterior.
+  valueHistory = newHistory.slice(-30).map(h => ({ ts: h.ts, cls: h.cls, values: h.values }));
+  const last = newHistory[newHistory.length - 1];
+  const prevLast = newHistory.length > 1 ? newHistory[newHistory.length - 2].cls : null;
+  currentValues = {...last.values};
+  TREE.feature_order.forEach(feat=>{
+    if(currentValues[feat] === undefined) currentValues[feat] = TREE.feature_stats[feat].mean;
+  });
+  lastClass = prevLast;
+
+  buildSliders();
+  document.querySelectorAll('.demo-select button').forEach(b => b.classList.remove('active'));
+  recompute({skipHistoryAppend: true});
+
+  document.getElementById('meta-training-rows').textContent =
+    result.n_rows_used.toLocaleString('es-CO') + ' registros de entrenamiento (archivo subido)';
+  document.getElementById('meta-used-features').textContent =
+    result.used_features.length + ' de ' + result.n_features_total + ' variables usadas';
+
+  setUploadStatus(
+    `Árbol reentrenado con ${result.n_rows_used} filas del archivo · variable objetivo detectada: "${result.target_column_usado}" · precisión en test: ${(result.test_accuracy*100).toFixed(1)}% · profundidad ${result.depth}, ${result.n_leaves} hojas${truncatedNote}. Panel actualizado.`,
+    false
+  );
+}
+
+async function handleHistoricalFile(file){
+  setUploadError(null);
+  try{
+    const pyodide = await getPyodideInstance();
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
+    if(!isCsv){
+      await ensureOpenpyxl(pyodide);
+    }
+    setUploadStatus('Leyendo el archivo y reentrenando el árbol de decisión…', false);
+    const buf = await file.arrayBuffer();
+    pyodide.FS.writeFile('/tmp/uploaded_data', new Uint8Array(buf));
+    pyodide.globals.set('uploaded_filename', file.name);
+    const resultJson = await pyodide.runPythonAsync(PYTHON_PIPELINE_CODE);
+    const result = JSON.parse(resultJson);
+    if(result.error){
+      setUploadError(result.error);
+      setUploadStatus('Archivo rechazado', true);
+      return;
+    }
+    applyTrainedModel(result);
+  }catch(err){
+    setUploadError('Error ejecutando el pipeline en el navegador: ' + (err && err.message ? err.message : String(err)));
+    setUploadStatus('Archivo rechazado', true);
+  }
+}
+
+document.getElementById('file-historico').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  handleHistoricalFile(file);
+});
+
+/* ---------------- INIT ---------------- */
+TREE.feature_order.forEach(feat=>{ currentValues[feat] = TREE.feature_stats[feat].mean; });
+buildSliders();
+loadPreset('high');
+</script>
+
+</body>
+</html>
