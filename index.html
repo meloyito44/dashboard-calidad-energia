@@ -1607,17 +1607,33 @@ except Exception as _e:
 _out
 `;
 
+function withTimeout(promise, ms, timeoutMsg){
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(timeoutMsg)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 let pyodideReadyPromise = null;
 function getPyodideInstance(){
   if(!pyodideReadyPromise){
     setUploadStatus('Cargando entorno Python en el navegador (primera vez, ~30–90s)…', false);
-    pyodideReadyPromise = loadPyodide().then(async (pyodide) => {
-      setUploadStatus('Instalando pandas y scikit-learn…', false);
+    const loadTask = (async () => {
+      if(typeof loadPyodide !== 'function'){
+        throw new Error('No se pudo cargar el script de Pyodide (cdn.jsdelivr.net). Revisa tu conexión, o si un firewall/VPN/bloqueador de anuncios está impidiendo la carga de scripts externos, y recarga la página.');
+      }
+      const pyodide = await loadPyodide();
+      setUploadStatus('Instalando pandas y scikit-learn (puede tardar 1–3 min la primera vez)…', false);
       // openpyxl no es un paquete pre-compilado de Pyodide (por eso fallaba con
       // loadPackage); se instala aparte vía micropip, y solo si el archivo lo necesita.
-      await pyodide.loadPackage(['numpy', 'pandas', 'scikit-learn', 'micropip']);
+      await pyodide.loadPackage(['numpy', 'scipy', 'joblib', 'threadpoolctl', 'pandas', 'scikit-learn', 'micropip']);
       return pyodide;
-    }).catch(err => {
+    })();
+    pyodideReadyPromise = withTimeout(
+      loadTask, 180000,
+      'La carga del entorno Python (Pyodide) superó los 3 minutos y se canceló. Esto suele deberse a una conexión lenta, o a que un firewall/VPN/bloqueador de anuncios está bloqueando cdn.jsdelivr.net. Prueba con otra red (ej. datos móviles) o desactiva temporalmente el bloqueador y vuelve a intentar.'
+    ).catch(err => {
       pyodideReadyPromise = null; // permitir reintento si falla la carga
       throw err;
     });
@@ -1629,7 +1645,10 @@ let openpyxlReadyPromise = null;
 function ensureOpenpyxl(pyodide){
   if(!openpyxlReadyPromise){
     setUploadStatus('Instalando soporte para Excel (openpyxl)…', false);
-    openpyxlReadyPromise = pyodide.pyimport('micropip').install('openpyxl').catch(err => {
+    openpyxlReadyPromise = withTimeout(
+      pyodide.pyimport('micropip').install('openpyxl'), 60000,
+      'La instalación de soporte para Excel (openpyxl) tardó demasiado. Revisa tu conexión o intenta subir el archivo como .csv en su lugar.'
+    ).catch(err => {
       openpyxlReadyPromise = null;
       throw err;
     });
@@ -1701,11 +1720,14 @@ async function handleHistoricalFile(file){
     if(!isCsv){
       await ensureOpenpyxl(pyodide);
     }
-    setUploadStatus('Leyendo el archivo y reentrenando el árbol de decisión…', false);
+    setUploadStatus('Leyendo el archivo y reentrenando el árbol de decisión (puede tardar varios minutos en archivos grandes)…', false);
     const buf = await file.arrayBuffer();
     pyodide.FS.writeFile('/tmp/uploaded_data', new Uint8Array(buf));
     pyodide.globals.set('uploaded_filename', file.name);
-    const resultJson = await pyodide.runPythonAsync(PYTHON_PIPELINE_CODE);
+    const resultJson = await withTimeout(
+      pyodide.runPythonAsync(PYTHON_PIPELINE_CODE), 300000,
+      'El entrenamiento del árbol superó los 5 minutos y se canceló. Es posible que el archivo sea demasiado grande para procesarlo en el navegador — intenta con un archivo más pequeño (menos filas).'
+    );
     const result = JSON.parse(resultJson);
     if(result.error){
       setUploadError(result.error);
