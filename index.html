@@ -278,7 +278,7 @@
   <div class="upload-card" id="upload-card">
     <div>
       <h3>📁 Cargar histórico y reentrenar el árbol (Excel/CSV)</h3>
-      <div class="footnote">Sube un archivo con las mismas columnas del medidor. El notebook original (limpieza, normalización Min-Max, terciles del target y <code>DecisionTreeClassifier</code>) se ejecuta con Python real dentro del navegador (Pyodide) sobre tus datos, genera un árbol nuevo específico para ese archivo, y todo el panel se actualiza con él. La primera carga tarda ~30–90s mientras se instala el entorno Python.</div>
+      <div class="footnote">Al subir el archivo, el sistema entrena un árbol de decisión nuevo específicamente con esos datos (no reutiliza el anterior) y actualiza todo el panel con él. Por dentro corre el mismo proceso del notebook original: limpieza, normalización Min-Max, cálculo de terciles del target y <code>DecisionTreeClassifier</code> — ejecutado con Python real dentro del navegador (Pyodide), sin enviar tus datos a ningún servidor. La primera carga tarda ~30–90s mientras se instala el entorno Python.</div>
       <div id="upload-errors"></div>
     </div>
     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
@@ -372,7 +372,7 @@
   <!-- ROW 1.5: path visualization (signature element) -->
   <div class="grid" id="arbol">
     <div class="card c12">
-      <h3>Recorrido del árbol de decisión — nodo raíz → hoja</h3>
+      <h3>Recorrido del árbol de decisión — paso a paso hasta la conclusión</h3>
       <div class="path-viz" id="path-viz"></div>
     </div>
   </div>
@@ -383,7 +383,7 @@
       <h3>Tendencia de la sesión — variables clave</h3>
       <div id="trend-chart"></div>
       <div id="trend-legend" style="margin-top:10px; font-size:11.5px; color:var(--ink-dim);"></div>
-      <div class="footnote">Cada línea usa su propio rango real (min–max del dataset de entrenamiento vigente) para que las escalas distintas sean comparables. Se grafican las últimas 30 lecturas de la sesión (cada movimiento de un control cuenta como una lectura). Si el archivo cargado no incluye alguna variable, esa línea se omite; si no incluye ninguna de las 4 clásicas (corriente, voltaje, potencia, cos φ), el panel grafica en su lugar hasta 4 variables reales que el árbol sí está usando, y lo indica debajo del gráfico.</div>
+      <div class="footnote">Este gráfico compara la evolución de varias variables a la vez, aunque tengan escalas muy distintas (amperios, voltios, vatios) — cada línea se ajusta a su propio rango real (mínimo–máximo del dataset de entrenamiento vigente) para que sean comparables visualmente. Se muestran las últimas 30 lecturas de la sesión (cada movimiento de un control cuenta como una lectura nueva). Si el archivo cargado no incluye alguna variable, esa línea se omite; si no incluye ninguna de las 4 variables clásicas (corriente, voltaje, potencia, cos φ), el panel grafica en su lugar hasta 4 variables reales que el árbol sí está usando, y lo indica debajo del gráfico.</div>
     </div>
     <div class="card c4">
       <h3>Confiabilidad de la clasificación</h3>
@@ -446,7 +446,7 @@
         <span><span class="legend-dot" style="background:var(--amber)"></span>Medio</span>
         <span><span class="legend-dot" style="background:var(--red)"></span>Alto</span>
       </div>
-      <div class="footnote">Cada vez que mueves un control, el sistema recalcula la clasificación recorriendo el árbol de decisión real entrenado sobre el dataset (profundidad 8, 26 hojas) y agrega el resultado a este historial.</div>
+      <div class="footnote" id="hist-footnote">Cada vez que mueves un control, el sistema recorre el árbol de decisión entrenado (con la profundidad y cantidad de resultados posibles que se muestran arriba) y agrega el resultado a este historial.</div>
     </div>
     <div class="card c4">
       <h3>Distribución de la sesión</h3>
@@ -954,7 +954,7 @@ function buildHistoricalDiagnosis(){
     .map(([feat,n]) => `${(LABELS[feat]||{name:feat}).name} (en ${n} de ${total} lecturas)`);
 
   // Tendencia: primera mitad del historial vs. segunda mitad (orden cronológico de registro)
-  let trendText;
+  let trendText, trendDirection = 'insufficient';
   if(total < 4){
     trendText = 'Todavía hay muy pocas lecturas registradas (menos de 4) para saber si la situación está mejorando o empeorando con el tiempo.';
   } else {
@@ -965,27 +965,33 @@ function buildHistoricalDiagnosis(){
     const r1 = highRate(firstHalf), r2 = highRate(secondHalf);
     if(r2 - r1 > 5){
       trendText = `La situación está empeorando: al inicio del historial, <b>${r1.toFixed(1)}%</b> de las lecturas eran ALTAS; en la parte más reciente, esa proporción subió a <b>${r2.toFixed(1)}%</b>. Conviene prestar atención.`;
+      trendDirection = 'up';
     } else if(r1 - r2 > 5){
       trendText = `La situación está mejorando: al inicio del historial, <b>${r1.toFixed(1)}%</b> de las lecturas eran ALTAS; en la parte más reciente, esa proporción bajó a <b>${r2.toFixed(1)}%</b>.`;
+      trendDirection = 'down';
     } else {
       trendText = 'La situación se ha mantenido estable: no hay una mejora ni un deterioro claro entre el inicio y la parte más reciente del historial.';
+      trendDirection = 'stable';
     }
   }
 
-  let verdict, verdictColor, verdictMeaning;
+  let verdict, verdictColor, verdictMeaning, riesgoLabel;
   const highPct = parseFloat(pctHigh), mediumPct = parseFloat(pctMedium);
   if(highPct >= 20){
     verdict = 'REQUIERE ATENCIÓN';
     verdictColor = '#F0523E';
     verdictMeaning = 'Una parte considerable de las lecturas históricas llegó al nivel más alto de consumo. Se recomienda revisar la instalación.';
+    riesgoLabel = 'Riesgo alto';
   } else if(highPct > 0 || mediumPct >= 30){
     verdict = 'VIGILANCIA RECOMENDADA';
     verdictColor = '#F5A623';
     verdictMeaning = 'No hay un problema crítico constante, pero suficientes lecturas se ubicaron en nivel medio (o alguna en alto) como para justificar seguimiento cercano.';
+    riesgoLabel = 'Riesgo medio';
   } else {
     verdict = 'ESTABLE';
     verdictColor = '#2ECC71';
     verdictMeaning = 'El sistema se mantuvo en consumo normal durante casi todo el periodo evaluado. No se requiere ninguna acción.';
+    riesgoLabel = 'Riesgo bajo';
   }
 
   const dominante = counts.high >= counts.medium && counts.high >= counts.low ? 'alto'
@@ -1031,10 +1037,80 @@ function buildHistoricalDiagnosis(){
     pqText = `Ninguna de las ${total} lecturas del historial se salió de los rangos recomendados de voltaje, corriente o factor de potencia — la calidad de energía se mantuvo buena durante todo el periodo evaluado.`;
   }
 
+  // Confiabilidad agregada: para cada lectura del historial, se recorre el árbol
+  // vigente y se usa el mismo criterio de la tarjeta "Confiabilidad de la clasificación"
+  // (alta ≥100 muestras en la hoja, moderada ≥10, baja <10).
+  const rootSamples = TREE.nodes[0].samples;
+  const relCounts = {alta: 0, moderada: 0, baja: 0};
+  let relPctSum = 0;
+  history.forEach(h=>{
+    const res = traverseTree(h.values);
+    const pct = rootSamples > 0 ? (res.leafSamples/rootSamples)*100 : 0;
+    relPctSum += pct;
+    if(res.leafSamples >= 100) relCounts.alta++;
+    else if(res.leafSamples >= 10) relCounts.moderada++;
+    else relCounts.baja++;
+  });
+  const relAvgPct = (relPctSum/total).toFixed(1);
+  let reliabilityText;
+  if(relCounts.baja === 0){
+    reliabilityText = `Todas las lecturas del historial cayeron en zonas del árbol bien respaldadas por el entrenamiento (confiabilidad promedio: ${relAvgPct}%). Los resultados son confiables para apoyar decisiones.`;
+  } else {
+    reliabilityText = `De las ${total} lecturas, ${relCounts.alta} tuvieron confiabilidad alta, ${relCounts.moderada} moderada y <b>${relCounts.baja}</b> baja (casos poco frecuentes en el entrenamiento, confiabilidad promedio: ${relAvgPct}%). Los casos de confiabilidad baja no deberían usarse solos para tomar una decisión.`;
+  }
+
+  // Recomendaciones históricas: a diferencia de buildRecommendations() (que reacciona
+  // solo a la lectura actual), estas pesan por FRECUENCIA a lo largo de todo el
+  // historial — una variable que aparece en muchas lecturas es un patrón recurrente,
+  // no un caso aislado, y así se lo dice al usuario.
+  const historicalRecommendations = [];
+  if(counts.medium === 0 && counts.high === 0){
+    historicalRecommendations.push({icon:'✅', text:`Durante las ${total} lecturas evaluadas, el consumo se mantuvo normal en todo momento. No se requiere ninguna acción — continuar con el monitoreo estándar.`});
+  } else {
+    const freqText = (feat) => featureFreq[feat] ? `${featureFreq[feat]} de ${total} lecturas (${(featureFreq[feat]/total*100).toFixed(0)}%)` : null;
+
+    if(featureFreq['Current A Avg']){
+      historicalRecommendations.push({icon:'⚡', text:`La corriente de fase A fue un factor determinante en ${freqText('Current A Avg')} — es un patrón recurrente, no un caso aislado. Se recomienda revisar la carga conectada a esa fase.`});
+    }
+    if(featureFreq['Apparent Power Total Avg']){
+      historicalRecommendations.push({icon:'🔌', text:`La potencia aparente total influyó en ${freqText('Apparent Power Total Avg')} — vale la pena evaluar si el circuito está sobrecargado de forma sostenida y no solo en momentos puntuales.`});
+    }
+    if(featureFreq['Current B Avg'] || featureFreq['Current C Avg']){
+      const n = Math.max(featureFreq['Current B Avg']||0, featureFreq['Current C Avg']||0);
+      historicalRecommendations.push({icon:'⚖️', text:`El balance entre fases B y C influyó en ${n} de ${total} lecturas (${(n/total*100).toFixed(0)}%) — conviene revisar si alguna fase carga sistemáticamente más que las otras, en vez de un desbalance ocasional.`});
+    }
+    if(featureFreq['Vrms ph-n AN Avg'] || featureFreq['Vrms ph-n BN Avg']){
+      const n = Math.max(featureFreq['Vrms ph-n AN Avg']||0, featureFreq['Vrms ph-n BN Avg']||0);
+      historicalRecommendations.push({icon:'📈', text:`La estabilidad del voltaje de línea influyó en ${n} de ${total} lecturas (${(n/total*100).toFixed(0)}%) — si esto se repite, sugiere una fluctuación sostenida y no picos aislados; conviene medir en campo.`});
+    }
+    if(featureFreq['Cos Phi AN Avg'] || featureFreq['Cos Phi BN Avg'] || featureFreq['Cos Phi Total Avg']){
+      const n = Math.max(featureFreq['Cos Phi AN Avg']||0, featureFreq['Cos Phi BN Avg']||0, featureFreq['Cos Phi Total Avg']||0);
+      historicalRecommendations.push({icon:'🎯', text:`El factor de potencia influyó en ${n} de ${total} lecturas (${(n/total*100).toFixed(0)}%) — si el patrón se mantiene, considerar corrección de factor de potencia en vez de una revisión puntual.`});
+    }
+    if(trendDirection === 'up'){
+      historicalRecommendations.push({icon:'📈', text:'La tendencia reciente es al alza: prioriza revisar primero las lecturas más nuevas del historial, ya que reflejan mejor la condición actual.'});
+    } else if(trendDirection === 'down'){
+      historicalRecommendations.push({icon:'👍', text:'La tendencia reciente es a la baja — cualquier acción correctiva que se haya tomado parece estar funcionando; mantenerla y seguir monitoreando.'});
+    }
+    if(pqIssues > 0){
+      historicalRecommendations.push({icon:'🛠️', text:`Se detectaron ${pqIssues} casos de calidad de energía fuera de rango a lo largo del historial (voltaje, corriente o factor de potencia) — programar una inspección técnica si el patrón continúa en próximas lecturas.`});
+    }
+    if(relCounts.baja > 0){
+      historicalRecommendations.push({icon:'⚠️', text:`${relCounts.baja} lectura(s) del historial tienen confiabilidad baja (casos poco frecuentes en el entrenamiento) — no tomar decisiones basadas solo en esos casos puntuales; confirmarlos con otra fuente antes de actuar.`});
+    }
+    if(verdict === 'REQUIERE ATENCIÓN'){
+      historicalRecommendations.push({icon:'🩺', text:'En conjunto, el patrón histórico justifica una revisión técnica priorizando las variables mencionadas arriba, no solo la lectura más reciente.'});
+    } else {
+      historicalRecommendations.push({icon:'👁️', text:'Mantener vigilancia activa sobre las variables mencionadas arriba mientras se acumulan más lecturas.'});
+    }
+  }
+
   return {
     available: true, total, counts, pctLow, pctMedium, pctHigh, topFeatures, trendText,
-    verdict, verdictColor, verdictMeaning, diagnosisText,
-    pq: {verdict: pqVerdict, color: pqColor, text: pqText}
+    verdict, verdictColor, verdictMeaning, riesgoLabel, diagnosisText,
+    pq: {verdict: pqVerdict, color: pqColor, text: pqText},
+    recommendations: historicalRecommendations,
+    reliability: {counts: relCounts, avgPct: relAvgPct, text: reliabilityText}
   };
 }
 
@@ -1210,6 +1286,7 @@ function buildTrendChart(){
   }
 }
 
+let lastConfidence = null;
 function buildConfidence(result){
   const total = TREE.nodes[0].samples; // registros de entrenamiento en el nodo raíz del árbol vigente
   const leafSamples = result.leafSamples;
@@ -1220,20 +1297,24 @@ function buildConfidence(result){
   const totalFmt = total.toLocaleString('es-CO');
   el.textContent = pct.toFixed(1) + '%';
   bar.style.width = Math.max(2, Math.min(100, pct*2)) + '%';
-  let color, msg;
+  let color, msg, tier;
   if (leafSamples >= 100){
+    tier = 'alta';
     color = '#2ECC71';
     msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — clasificación bien sustentada para apoyar una decisión.`;
   } else if (leafSamples >= 10){
+    tier = 'moderada';
     color = '#F5A623';
     msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — respaldo moderado, verificar con otra fuente antes de actuar.`;
   } else {
+    tier = 'baja';
     color = '#F0523E';
     msg = `⚠︎ Solo <b>${leafSamples}</b> de ${totalFmt} lecturas históricas cayeron en este mismo nodo — caso poco frecuente en el entrenamiento. No tomar una decisión operativa basada únicamente en este resultado.`;
   }
   el.style.color = color;
   bar.style.background = color;
   note.innerHTML = msg;
+  lastConfidence = {pct, leafSamples, total, tier, color, msg};
 }
 
 /* ---------------- MAIN RECOMPUTE ---------------- */
@@ -1252,7 +1333,11 @@ function recompute(opts){
   document.getElementById('status-text').textContent = meta.statusText;
   document.getElementById('status-text').style.color = meta.colorHex;
   document.getElementById('status-sub').textContent = meta.statusSub;
-  document.getElementById('meta-nodes').textContent = TREE.depth + ' niveles, ' + TREE.n_leaves + ' hojas';
+  document.getElementById('meta-nodes').textContent = TREE.depth + ' niveles de profundidad, ' + TREE.n_leaves + ' posibles conclusiones distintas';
+  const histFootnote = document.getElementById('hist-footnote');
+  if(histFootnote){
+    histFootnote.textContent = `Cada vez que mueves un control, el sistema recorre el árbol de decisión entrenado (${TREE.depth} niveles de profundidad, ${TREE.n_leaves} posibles conclusiones) y agrega el resultado a este historial.`;
+  }
 
   document.getElementById('indicador').textContent = meta.label;
   document.getElementById('indicador').style.color = meta.colorHex;
@@ -1457,8 +1542,13 @@ function generateCurrentReportText(){
   lines.push('Generado: ' + new Date().toLocaleString('es-CO'));
   lines.push('Medidor: Sub-estación 03 · Fase Principal');
   lines.push('');
-  lines.push('Clasificación: ' + meta.label.toUpperCase() + ' (' + meta.riesgo + ')');
+  lines.push('Clasificación: ' + meta.label.toUpperCase() + ' · Nivel de riesgo: ' + meta.riesgo);
   lines.push('');
+  const conf = lastConfidence;
+  if(conf){
+    lines.push(`Confiabilidad de la clasificación: ${conf.pct.toFixed(1)}% (${conf.tier.toUpperCase()}) — ${conf.msg.replace(/<\/?b>/g,'')}`);
+    lines.push('');
+  }
   lines.push('Diagnóstico del árbol de decisión: ' + buildDiagnosis(r.predicted, r.path).replace(/<\/?b>/g,''));
   lines.push('');
   lines.push('Recorrido del árbol de decisión (variable evaluada → condición cumplida):');
@@ -1490,13 +1580,19 @@ function generateHistoricalReportText(){
   lines.push(`Lecturas evaluadas: ${d.total}`);
   lines.push(`Distribución: Bajo ${d.counts.low} (${d.pctLow}%) · Medio ${d.counts.medium} (${d.pctMedium}%) · Alto ${d.counts.high} (${d.pctHigh}%)`);
   lines.push('');
-  lines.push('Veredicto general: ' + d.verdict);
+  lines.push('Veredicto general: ' + d.verdict + ' · Nivel de riesgo: ' + d.riesgoLabel);
   lines.push(d.verdictMeaning);
   lines.push(d.diagnosisText.replace(/<\/?b>/g,''));
   lines.push('');
   lines.push('Tendencia: ' + d.trendText.replace(/<\/?b>/g,''));
   lines.push('');
   lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text.replace(/<\/?b>/g,''));
+  lines.push('');
+  lines.push(`Confiabilidad de las clasificaciones: Alta ${d.reliability.counts.alta} · Moderada ${d.reliability.counts.moderada} · Baja ${d.reliability.counts.baja}`);
+  lines.push(d.reliability.text.replace(/<\/?b>/g,''));
+  lines.push('');
+  lines.push('Recomendaciones basadas en el historial:');
+  d.recommendations.forEach(r => lines.push('  - ' + r.text));
   return lines.join('\n');
 }
 
@@ -1548,7 +1644,7 @@ document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
   const body = `
     <h4>Veredicto general del historial</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿Qué tan bien se ha comportado el sistema en todas las lecturas evaluadas hasta ahora?</p>
-    <p style="font-size:17px; font-weight:700; color:${d.verdictColor};">${d.verdict}</p>
+    <p style="font-size:17px; font-weight:700; color:${d.verdictColor};">${d.verdict} · <span style="font-size:13px;">${d.riesgoLabel}</span></p>
     <p>${d.verdictMeaning}</p>
     <p>${d.diagnosisText}</p>
     <h4>Tendencia</h4>
@@ -1557,6 +1653,12 @@ document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
     <h4>Calidad de energía agregada</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Voltaje, corriente y factor de potencia, evaluados en conjunto para todas las lecturas del historial.</p>
     <p>Veredicto: <b style="color:${d.pq.color}">${d.pq.verdict}</b> — ${d.pq.text}</p>
+    <h4>Confiabilidad de las clasificaciones</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿Qué tan respaldadas por el entrenamiento están las clasificaciones de todo el historial?</p>
+    <p>Alta: <b>${d.reliability.counts.alta}</b> · Moderada: <b>${d.reliability.counts.moderada}</b> · Baja: <b>${d.reliability.counts.baja}</b> — ${d.reliability.text}</p>
+    <h4>Recomendaciones basadas en el historial</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">A diferencia de las recomendaciones de la lectura actual, estas pesan por qué tan seguido se repite cada patrón a lo largo de todas las lecturas evaluadas.</p>
+    <ul style="list-style:none; margin:0; padding:0; line-height:1.9;">${d.recommendations.map(r=>`<li>${r.icon} ${r.text}</li>`).join('')}</ul>
     <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">Este diagnóstico resume las ${d.total} lecturas ya evaluadas en esta sesión (sliders y/o archivo subido), a diferencia de "Generar diagnóstico" y "Diagnóstico de calidad de energía", que solo describen la lectura actual.</p>
   `;
   openModal('Diagnóstico histórico general', body);
@@ -1583,6 +1685,9 @@ document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
   const pq = buildPowerQualityDiagnosis();
   const pqRows = pq.details.map(d => `<li>${d.icon} ${d.text}</li>`).join('');
   const body = `
+    <h4>Resultado y nivel de riesgo</h4>
+    <p>Clasificación: <b style="color:${meta.colorHex}">${meta.label}</b> · Nivel de riesgo: <b style="color:${meta.colorHex}">${meta.riesgo}</b></p>
+    <p>Confiabilidad de la clasificación: <b style="color:${lastConfidence.color}">${lastConfidence.pct.toFixed(1)}% (${lastConfidence.tier.toUpperCase()})</b> — ${lastConfidence.msg}</p>
     <h4>Diagnóstico ampliado</h4>
     <p>${buildDiagnosis(r.predicted, r.path)}</p>
     <h4>Reglas que aplicó el árbol de decisión, paso a paso</h4>
