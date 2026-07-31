@@ -428,6 +428,7 @@
         <button class="action-btn" id="btn-analizar"><span class="ico">🧭</span>Analizar registro</button>
         <button class="action-btn" id="btn-historico"><span class="ico">📊</span>Comparar histórico</button>
         <button class="action-btn" id="btn-calidad"><span class="ico">📐</span>Diagnóstico de calidad de energía</button>
+        <button class="action-btn" id="btn-historico-diag"><span class="ico">📈</span>Diagnóstico histórico general</button>
         <button class="action-btn" id="btn-exportar"><span class="ico">📄</span>Exportar reporte</button>
         <button class="action-btn" id="btn-diagnostico"><span class="ico">🩺</span>Generar diagnóstico</button>
       </div>
@@ -927,6 +928,104 @@ function buildPowerQualityDiagnosis(){
   return {verdict, verdictColor, verdictText, details, nEvaluated, nGood, nWarn, nBad};
 }
 
+/* ---------------- HISTORICAL DIAGNOSIS (síntesis de TODAS las lecturas evaluadas) ---------------- */
+// A diferencia de buildDiagnosis()/buildPowerQualityDiagnosis() (que evalúan solo la
+// lectura que se está viendo ahora mismo), esta función resume el historial completo:
+// todas las filas ya clasificadas en esta sesión (ya sea por sliders o por un archivo
+// subido), tanto en consumo (bajo/medio/alto) como en calidad de energía agregada.
+function buildHistoricalDiagnosis(){
+  if(!history.length){
+    return {available: false};
+  }
+  const total = history.length;
+  const counts = {low:0, medium:0, high:0};
+  const featureFreq = {};
+  history.forEach(h=>{
+    counts[h.cls] = (counts[h.cls]||0) + 1;
+    (h.path||[]).forEach(step=>{
+      featureFreq[step.feature] = (featureFreq[step.feature]||0) + 1;
+    });
+  });
+  const pctLow = (counts.low/total*100).toFixed(1);
+  const pctMedium = (counts.medium/total*100).toFixed(1);
+  const pctHigh = (counts.high/total*100).toFixed(1);
+
+  const topFeatures = Object.entries(featureFreq).sort((a,b)=>b[1]-a[1]).slice(0,3)
+    .map(([feat,n]) => `${(LABELS[feat]||{name:feat}).name} (en ${n} de ${total} lecturas)`);
+
+  // Tendencia: primera mitad del historial vs. segunda mitad (orden cronológico de registro)
+  let trendText;
+  if(total < 4){
+    trendText = 'El historial tiene muy pocas lecturas todavía para establecer una tendencia confiable.';
+  } else {
+    const half = Math.floor(total/2);
+    const firstHalf = history.slice(0, half);
+    const secondHalf = history.slice(half);
+    const highRate = arr => arr.length ? (arr.filter(h=>h.cls==='high').length/arr.length*100) : 0;
+    const r1 = highRate(firstHalf), r2 = highRate(secondHalf);
+    if(r2 - r1 > 5){
+      trendText = `La proporción de lecturas ALTAS subió de ${r1.toFixed(1)}% (primera mitad del historial) a ${r2.toFixed(1)}% (segunda mitad) — tendencia al alza que conviene vigilar.`;
+    } else if(r1 - r2 > 5){
+      trendText = `La proporción de lecturas ALTAS bajó de ${r1.toFixed(1)}% (primera mitad del historial) a ${r2.toFixed(1)}% (segunda mitad) — tendencia a la baja, favorable.`;
+    } else {
+      trendText = 'La proporción de lecturas ALTAS se mantuvo relativamente estable a lo largo del historial, sin una tendencia clara al alza ni a la baja.';
+    }
+  }
+
+  let verdict, verdictColor;
+  const highPct = parseFloat(pctHigh), mediumPct = parseFloat(pctMedium);
+  if(highPct >= 20){ verdict = 'REQUIERE ATENCIÓN'; verdictColor = '#F0523E'; }
+  else if(highPct > 0 || mediumPct >= 30){ verdict = 'VIGILANCIA RECOMENDADA'; verdictColor = '#F5A623'; }
+  else { verdict = 'ESTABLE'; verdictColor = '#2ECC71'; }
+
+  const diagnosisText = `A lo largo de <b>${total}</b> lecturas evaluadas, el árbol de decisión clasificó ${counts.low} como <b>bajo</b> (${pctLow}%), ${counts.medium} como <b>medio</b> (${pctMedium}%) y ${counts.high} como <b>alto</b> (${pctHigh}%).` +
+    (topFeatures.length ? ` Las variables que con más frecuencia determinaron estas clasificaciones fueron: ${topFeatures.join(', ')}.` : '');
+
+  // Calidad de energía agregada: mismas fórmulas que buildPowerQualityDiagnosis(),
+  // aplicadas a cada lectura del historial en vez de solo a la actual.
+  const vImb = [], cImb = [], fps = [];
+  history.forEach(h=>{
+    const vFeats = ['Vrms ph-n AN Avg','Vrms ph-n BN Avg','Vrms ph-n CN Avg'];
+    if(vFeats.every(f=>typeof h.values[f]==='number')){
+      const vals = vFeats.map(f=>h.values[f]);
+      const avg = (vals[0]+vals[1]+vals[2])/3;
+      if(avg > 0) vImb.push(Math.max(...vals.map(x=>Math.abs(x-avg)))/avg*100);
+    }
+    const cFeats = ['Current A Avg','Current B Avg','Current C Avg'];
+    if(cFeats.every(f=>typeof h.values[f]==='number')){
+      const vals = cFeats.map(f=>h.values[f]);
+      const avg = (vals[0]+vals[1]+vals[2])/3;
+      if(avg > 0) cImb.push(Math.max(...vals.map(x=>Math.abs(x-avg)))/avg*100);
+    }
+    if(typeof h.values['Cos Phi Total Avg'] === 'number'){
+      const fp = h.values['Cos Phi Total Avg'];
+      if(fp >= 0 && fp <= 1.2) fps.push(fp);
+    }
+  });
+  const badV = vImb.filter(x=>x>2).length;
+  const badC = cImb.filter(x=>x>20).length;
+  const badFp = fps.filter(x=>x<0.85).length;
+  const pqIssues = badV + badC + badFp;
+
+  let pqVerdict, pqColor, pqText;
+  if(vImb.length===0 && cImb.length===0 && fps.length===0){
+    pqVerdict = 'SIN DATOS SUFICIENTES'; pqColor = '#8C9AB5';
+    pqText = 'El historial no incluye las variables necesarias (voltaje trifásico, corriente trifásica o factor de potencia) para evaluar la calidad de energía de forma agregada.';
+  } else if(pqIssues > 0){
+    pqVerdict = 'DEFICIENTE EN ALGUNAS LECTURAS'; pqColor = '#F0523E';
+    pqText = `Se detectaron ${pqIssues} casos fuera de rango (sumando los 3 índices) a lo largo de las ${total} lecturas evaluadas.`;
+  } else {
+    pqVerdict = 'BUENA EN TODO EL HISTORIAL'; pqColor = '#2ECC71';
+    pqText = `Ninguna de las ${total} lecturas registradas superó los límites recomendados de desequilibrio de voltaje, corriente o factor de potencia.`;
+  }
+
+  return {
+    available: true, total, counts, pctLow, pctMedium, pctHigh, topFeatures, trendText,
+    verdict, verdictColor, diagnosisText,
+    pq: {verdict: pqVerdict, color: pqColor, text: pqText}
+  };
+}
+
 /* ---------------- KPI STRIP ---------------- */
 function buildKPIs(meta){
   const currFeats = ['Current A Avg', 'Current B Avg', 'Current C Avg'];
@@ -1338,10 +1437,11 @@ document.getElementById('btn-historico').addEventListener('click', ()=>{
   openModal('Comparación con el histórico de la sesión', body);
 });
 
-document.getElementById('btn-exportar').addEventListener('click', ()=>{
+function generateCurrentReportText(){
   const r = lastResult; const meta = CLASS_META[r.predicted];
+  const pq = buildPowerQualityDiagnosis();
   const lines = [];
-  lines.push('REPORTE DE CLASIFICACIÓN DE CALIDAD DE ENERGÍA');
+  lines.push('REPORTE DE CLASIFICACIÓN DE CALIDAD DE ENERGÍA — LECTURA ACTUAL');
   lines.push('Generado: ' + new Date().toLocaleString('es-CO'));
   lines.push('Medidor: Sub-estación 03 · Fase Principal');
   lines.push('');
@@ -1356,9 +1456,38 @@ document.getElementById('btn-exportar').addEventListener('click', ()=>{
     lines.push(`  ${i+1}. ${info.name} = ${fmt(s.realVal,s.feature)}  (${dirWord} ${fmt(s.thresholdReal,s.feature)})`);
   });
   lines.push('');
+  lines.push('Calidad de energía (lectura actual): ' + pq.verdict + ' — ' + pq.verdictText);
+  pq.details.forEach(d => lines.push('  - ' + d.text.replace(/<\/?b>/g,'')));
+  lines.push('');
   lines.push('Recomendaciones:');
   buildRecommendations(r.predicted, r.path).forEach(rec => lines.push('  - ' + rec.text));
-  const text = lines.join('\n');
+  return lines.join('\n');
+}
+
+function generateHistoricalReportText(){
+  const d = buildHistoricalDiagnosis();
+  const lines = [];
+  lines.push('REPORTE GENERAL DEL HISTÓRICO — SUPERVISIÓN DE CALIDAD DE ENERGÍA');
+  lines.push('Generado: ' + new Date().toLocaleString('es-CO'));
+  lines.push('Medidor: Sub-estación 03 · Fase Principal');
+  lines.push('');
+  if(!d.available){
+    lines.push('Aún no hay lecturas registradas en el historial de esta sesión.');
+    return lines.join('\n');
+  }
+  lines.push(`Lecturas evaluadas: ${d.total}`);
+  lines.push(`Distribución: Bajo ${d.counts.low} (${d.pctLow}%) · Medio ${d.counts.medium} (${d.pctMedium}%) · Alto ${d.counts.high} (${d.pctHigh}%)`);
+  lines.push('');
+  lines.push('Veredicto general: ' + d.verdict);
+  lines.push(d.diagnosisText.replace(/<\/?b>/g,''));
+  lines.push('');
+  lines.push('Tendencia: ' + d.trendText);
+  lines.push('');
+  lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text);
+  return lines.join('\n');
+}
+
+function openExportTextModal(text){
   const body = `
     <h4>Reporte generado</h4>
     <p style="color:#8C9AB5;">Selecciona el texto y cópialo, o usa el botón para copiarlo al portapapeles.</p>
@@ -1377,6 +1506,43 @@ document.getElementById('btn-exportar').addEventListener('click', ()=>{
       document.getElementById('copy-btn').textContent = 'Copiado ✓';
     }
   });
+}
+
+document.getElementById('btn-exportar').addEventListener('click', ()=>{
+  const body = `
+    <h4>¿Qué diagnóstico quieres exportar?</h4>
+    <p style="color:#8C9AB5;">Elige si el reporte debe cubrir solo la lectura que estás viendo ahora, o un resumen de todas las lecturas evaluadas en esta sesión.</p>
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+      <button class="action-btn" id="export-choice-actual" style="justify-content:flex-start;">📍 Diagnóstico de la lectura actual</button>
+      <button class="action-btn" id="export-choice-historico" style="justify-content:flex-start;">📈 Diagnóstico general del histórico</button>
+    </div>
+  `;
+  openModal('Exportar reporte', body);
+  document.getElementById('export-choice-actual').addEventListener('click', ()=>{
+    openExportTextModal(generateCurrentReportText());
+  });
+  document.getElementById('export-choice-historico').addEventListener('click', ()=>{
+    openExportTextModal(generateHistoricalReportText());
+  });
+});
+
+document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
+  const d = buildHistoricalDiagnosis();
+  if(!d.available){
+    openModal('Diagnóstico histórico general', '<p style="color:#8C9AB5;">Aún no hay lecturas registradas en el historial.</p>');
+    return;
+  }
+  const body = `
+    <h4>Veredicto general del historial</h4>
+    <p style="font-size:17px; font-weight:700; color:${d.verdictColor};">${d.verdict}</p>
+    <p>${d.diagnosisText}</p>
+    <h4>Tendencia</h4>
+    <p>${d.trendText}</p>
+    <h4>Calidad de energía agregada</h4>
+    <p>Veredicto: <b style="color:${d.pq.color}">${d.pq.verdict}</b> — ${d.pq.text}</p>
+    <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">Este diagnóstico resume las ${d.total} lecturas ya evaluadas en esta sesión (sliders y/o archivo subido), a diferencia de "Generar diagnóstico" y "Diagnóstico de calidad de energía", que solo describen la lectura actual.</p>
+  `;
+  openModal('Diagnóstico histórico general', body);
 });
 
 document.getElementById('btn-calidad').addEventListener('click', ()=>{
