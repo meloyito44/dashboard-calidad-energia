@@ -57,6 +57,9 @@
   .kpi-label{ font-size:10.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
   .kpi-value{ font-family:'IBM Plex Mono', monospace; font-size:19px; font-weight:600; margin-top:5px; color:var(--ink); }
   .kpi-sub{ font-size:10.5px; color:#5B6A87; margin-top:2px; }
+  .kpi-spark{ margin-top:8px; height:34px; line-height:0; }
+  .kpi-spark svg{ display:block; width:100%; height:100%; }
+  .kpi-spark-empty{ height:34px; margin-top:8px; }
 
   /* ---- path visualization (signature element) ---- */
   .path-viz{ display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:6px 2px 10px 2px; }
@@ -294,21 +297,25 @@
       <div class="kpi-label">Corriente promedio</div>
       <div class="kpi-value" id="kpi-current">—</div>
       <div class="kpi-sub">Fases A · B · C</div>
+      <div class="kpi-spark" id="spark-current"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Voltaje promedio</div>
       <div class="kpi-value" id="kpi-voltage">—</div>
       <div class="kpi-sub">Fase-neutro</div>
+      <div class="kpi-spark" id="spark-voltage"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Potencia aparente</div>
       <div class="kpi-value" id="kpi-power">—</div>
       <div class="kpi-sub">Total del sistema</div>
+      <div class="kpi-spark" id="spark-power"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Factor de potencia</div>
       <div class="kpi-value" id="kpi-cosphi">—</div>
       <div class="kpi-sub">Cos φ total</div>
+      <div class="kpi-spark" id="spark-cosphi"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Estado del sistema</div>
@@ -841,133 +848,6 @@ function buildRiskAnalysis(result){
   return {cls, meta, score, factors, aggravantes, urgency, urgencyColor};
 }
 
-/* ---------------- PQ EVENT INTERPRETATION (6 categorías clásicas de calidad de energía) ---------------- */
-// Interpreta la LECTURA ACTUAL contra las 6 categorías clásicas de eventos de
-// calidad de energía (sobretensión/subtensión, frecuencia, THD, flicker,
-// interrupciones, factor de potencia). Busca las variables relevantes por nombre
-// dentro de TREE.feature_order — así, si el archivo entrenado no las trae (como
-// el dataset actual, que no mide frecuencia, THD ni flicker), lo dice
-// explícitamente en vez de inventar un resultado.
-const PQ_EVENT_PATTERNS = {
-  voltage: ['vrms', 'voltage', 'volt'],
-  freq: ['freq', 'hz'],
-  thd: ['thd', 'harmonic', 'armonic', 'armónic'],
-  flicker: ['flicker', 'pst', 'plt'],
-  pf: ['cos phi', 'power factor', 'fp avg', 'factor de potencia']
-};
-function findFeaturesByPattern(patterns){
-  return TREE.feature_order.filter(f => patterns.some(p => f.toLowerCase().includes(p)));
-}
-function featLabel(f){ return (LABELS[f] && LABELS[f].name) || f; }
-
-function buildPQEventInterpretation(){
-  const events = [];
-
-  // 1. Sobretensiones y Subtensiones
-  const vFeats = findFeaturesByPattern(PQ_EVENT_PATTERNS.voltage);
-  if(vFeats.length){
-    const devs = vFeats.map(f=>{
-      const mean = TREE.feature_stats[f].mean;
-      const val = currentValues[f];
-      const pct = mean !== 0 ? ((val-mean)/mean*100) : 0;
-      return {f, val, mean, pct};
-    });
-    const worst = devs.reduce((a,b)=> Math.abs(b.pct) > Math.abs(a.pct) ? b : a, devs[0]);
-    const present = Math.abs(worst.pct) >= 10;
-    events.push({
-      evento: 'Sobretensiones y Subtensiones', evaluable: true, present,
-      explicacion: present
-        ? `${worst.pct>0?'Sobretensión':'Subtensión'} detectada en <b>${featLabel(worst.f)}</b>: ${fmt(worst.val, worst.f)}, un ${Math.abs(worst.pct).toFixed(1)}% ${worst.pct>0?'por encima':'por debajo'} del promedio histórico de esa variable (${fmt(worst.mean, worst.f)}). Se usa el promedio del dataset de entrenamiento como referencia porque no hay un voltaje nominal declarado para esta instalación.`
-        : `Los voltajes medidos (${vFeats.map(featLabel).join(', ')}) están dentro de ±10% de su promedio histórico — no hay evidencia de sobretensión ni subtensión en esta lectura.`
-    });
-  } else {
-    events.push({evento: 'Sobretensiones y Subtensiones', evaluable: false, explicacion: 'El archivo con el que se entrenó el árbol actual no incluye variables de voltaje (Vrms) — esta categoría no se puede evaluar con los datos disponibles.'});
-  }
-
-  // 2. Frecuencia
-  const freqFeats = findFeaturesByPattern(PQ_EVENT_PATTERNS.freq);
-  if(freqFeats.length){
-    const f = freqFeats[0];
-    const mean = TREE.feature_stats[f].mean, val = currentValues[f];
-    const pct = mean !== 0 ? ((val-mean)/mean*100) : 0;
-    const present = Math.abs(pct) >= 1; // la frecuencia es mucho más estable que el voltaje
-    events.push({
-      evento: 'Frecuencia', evaluable: true, present,
-      explicacion: present
-        ? `Desviación de frecuencia detectada en <b>${featLabel(f)}</b>: ${fmt(val, f)}, un ${Math.abs(pct).toFixed(2)}% respecto al promedio histórico (${fmt(mean, f)}).`
-        : `La frecuencia medida (${fmt(val, f)}) está dentro de ±1% de su promedio histórico — sin evidencia de desviación.`
-    });
-  } else {
-    events.push({evento: 'Frecuencia', evaluable: false, explicacion: 'El archivo con el que se entrenó el árbol actual no incluye una variable de frecuencia — esta categoría no se puede evaluar con los datos disponibles.'});
-  }
-
-  // 3. Distorsión Armónica (THD)
-  const thdFeats = findFeaturesByPattern(PQ_EVENT_PATTERNS.thd);
-  if(thdFeats.length){
-    const f = thdFeats[0];
-    const val = currentValues[f];
-    const present = val >= 8; // referencia típica IEEE 519 para THD de voltaje en baja tensión
-    events.push({
-      evento: 'Distorsión Armónica (THD)', evaluable: true, present,
-      explicacion: present
-        ? `THD elevado en <b>${featLabel(f)}</b>: ${fmt(val, f)}, por encima del 8% de referencia (IEEE 519) — indica presencia significativa de armónicos.`
-        : `El THD medido (${fmt(val, f)}) está por debajo del 8% de referencia — sin evidencia de distorsión armónica relevante.`
-    });
-  } else {
-    events.push({evento: 'Distorsión Armónica (THD)', evaluable: false, explicacion: 'El archivo con el que se entrenó el árbol actual no incluye una variable de THD — esta categoría no se puede evaluar con los datos disponibles.'});
-  }
-
-  // 4. Flicker
-  const flickerFeats = findFeaturesByPattern(PQ_EVENT_PATTERNS.flicker);
-  if(flickerFeats.length){
-    const f = flickerFeats[0];
-    const val = currentValues[f];
-    const present = val >= 1; // Pst/Plt >= 1 es el umbral clásico de perceptibilidad
-    events.push({
-      evento: 'Flicker', evaluable: true, present,
-      explicacion: present
-        ? `Índice de flicker elevado en <b>${featLabel(f)}</b>: ${fmt(val, f)}, en o por encima del umbral de perceptibilidad (1.0) — parpadeo de luminosidad potencialmente perceptible.`
-        : `El índice de flicker medido (${fmt(val, f)}) está por debajo del umbral de perceptibilidad (1.0) — sin evidencia de flicker relevante.`
-    });
-  } else {
-    events.push({evento: 'Flicker', evaluable: false, explicacion: 'El archivo con el que se entrenó el árbol actual no incluye una variable de flicker (Pst/Plt) — esta categoría no se puede evaluar con los datos disponibles.'});
-  }
-
-  // 5. Interrupciones de Suministro (proxy: colapso de voltaje)
-  if(vFeats.length){
-    const collapsed = vFeats.filter(f => currentValues[f] < TREE.feature_stats[f].mean * 0.1);
-    const present = collapsed.length > 0;
-    events.push({
-      evento: 'Interrupciones de Suministro', evaluable: true, present,
-      explicacion: present
-        ? `Posible interrupción: <b>${collapsed.map(featLabel).join(', ')}</b> ${collapsed.length>1?'están':'está'} por debajo del 10% de su promedio histórico — un colapso de voltaje de esta magnitud es característico de una interrupción de suministro.`
-        : `Los voltajes medidos se mantienen muy por encima del umbral de colapso (10% del promedio histórico) — sin evidencia de interrupción de suministro. Nota: esto es un indicio indirecto a partir de promedios, no un registro de eventos de interrupción con duración exacta.`
-    });
-  } else {
-    events.push({evento: 'Interrupciones de Suministro', evaluable: false, explicacion: 'Sin variables de voltaje disponibles, no es posible estimar interrupciones de suministro.'});
-  }
-
-  // 6. Factor de Potencia
-  const pfFeats = findFeaturesByPattern(PQ_EVENT_PATTERNS.pf);
-  const pfValid = pfFeats.map(f=>({f, val: currentValues[f]})).filter(x => x.val >= 0 && x.val <= 1.2);
-  if(pfValid.length){
-    const worst = pfValid.reduce((a,b)=> b.val < a.val ? b : a, pfValid[0]);
-    const present = worst.val < 0.85;
-    events.push({
-      evento: 'Factor de Potencia', evaluable: true, present,
-      explicacion: present
-        ? `Factor de potencia bajo en <b>${featLabel(worst.f)}</b>: ${worst.val.toFixed(2)}, por debajo del mínimo recomendado de 0.85 — indica uso ineficiente de la energía (posibles cargas reactivas).`
-        : `El factor de potencia medido (${worst.val.toFixed(2)}) está dentro de lo aceptable (≥0.85) — sin evidencia de este evento.`
-    });
-  } else if(pfFeats.length){
-    events.push({evento: 'Factor de Potencia', evaluable: false, explicacion: 'El valor de factor de potencia disponible está fuera del rango físico posible (0–1) — probable error del sensor, no se pudo evaluar.'});
-  } else {
-    events.push({evento: 'Factor de Potencia', evaluable: false, explicacion: 'El archivo con el que se entrenó el árbol actual no incluye una variable de factor de potencia (Cos Phi) — esta categoría no se puede evaluar con los datos disponibles.'});
-  }
-
-  return events;
-}
-
 /* ---------------- QUALITY INDICES (computed from real live readings) ---------------- */
 function setIndexCard(valId, barId, text, pct, colorHex){
   document.getElementById(valId).textContent = text;
@@ -1173,31 +1053,6 @@ function buildHistoricalDiagnosis(){
   const diagnosisText = `De las <b>${total}</b> lecturas evaluadas en esta sesión, la mayoría se clasificó como <b>${dominante}</b>. En detalle: ${counts.low} lecturas en bajo (${pctLow}%), ${counts.medium} en medio (${pctMedium}%) y ${counts.high} en alto (${pctHigh}%).` +
     (topFeatures.length ? ` Las variables que el árbol evaluó con más frecuencia a lo largo de todo el historial fueron: ${topFeatures.join(', ')}.` : '');
 
-  // Análisis de riesgo agregado: puntaje promedio (misma escala 0-100 del gauge),
-  // factores que más veces empujaron el resultado hacia un riesgo mayor —con sus
-  // consecuencias específicas (RISK_CONSEQUENCES)—, y urgencia según el veredicto.
-  const riskScoreAvg = total > 0
-    ? Math.round(history.reduce((sum,h)=>sum + CLASS_META[h.cls].gaugePos, 0) / total)
-    : 0;
-  const riskFactorKeys = Object.entries(featureFreq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f])=>f);
-  const riskFactors = riskFactorKeys.map(feat => ({
-    name: (LABELS[feat]||{name:feat}).name,
-    count: featureFreq[feat],
-    pct: (featureFreq[feat]/total*100).toFixed(0),
-    consequence: RISK_CONSEQUENCES[feat] || 'Puede afectar la eficiencia y estabilidad general del sistema.'
-  }));
-  let riskUrgency, riskUrgencyColor;
-  if(verdict === 'REQUIERE ATENCIÓN'){
-    riskUrgency = 'Atención en el corto plazo — el patrón se repite lo suficiente como para justificar una revisión técnica, no solo vigilancia.';
-    riskUrgencyColor = '#F0523E';
-  } else if(verdict === 'VIGILANCIA RECOMENDADA'){
-    riskUrgency = 'Seguimiento cercano — vigilar si las variables señaladas siguen apareciendo en próximas lecturas.';
-    riskUrgencyColor = '#F5A623';
-  } else {
-    riskUrgency = 'Sin urgencia — el sistema se ha mantenido en consumo normal durante casi todo el periodo evaluado.';
-    riskUrgencyColor = '#2ECC71';
-  }
-
   // Calidad de energía agregada: mismas fórmulas que buildPowerQualityDiagnosis(),
   // aplicadas a cada lectura del historial en vez de solo a la actual.
   const vImb = [], cImb = [], fps = [];
@@ -1307,7 +1162,6 @@ function buildHistoricalDiagnosis(){
   return {
     available: true, total, counts, pctLow, pctMedium, pctHigh, topFeatures, trendText,
     verdict, verdictColor, verdictMeaning, riesgoLabel, diagnosisText,
-    risk: {scoreAvg: riskScoreAvg, factors: riskFactors, urgency: riskUrgency, urgencyColor: riskUrgencyColor},
     pq: {verdict: pqVerdict, color: pqColor, text: pqText},
     recommendations: historicalRecommendations,
     reliability: {counts: relCounts, avgPct: relAvgPct, text: reliabilityText}
@@ -1340,6 +1194,76 @@ function buildKPIs(meta){
   estadoEl.textContent = meta.label;
   estadoEl.style.color = meta.colorHex;
   document.getElementById('kpi-estado-sub').textContent = meta.riesgo;
+}
+
+/* ---------------- MINI-GRÁFICOS DE TENDENCIA EN LOS KPI (sparklines) ---------------- */
+// Reutilizan la misma fuente que la tarjeta "Tendencia de la sesión" (valueHistory: un snapshot
+// completo por cada lectura/movimiento de un control, hasta las últimas 30). A diferencia de esa
+// tarjeta —que escala cada línea contra el min–max histórico del dataset—, aquí cada sparkline se
+// autoescala contra sus propios puntos, para que el movimiento relativo se note incluso cuando la
+// variable se mueve poco frente al rango total del dataset (igual que un sparkline de tablero).
+function kpiSeriesValue(pt, kind){
+  const v = pt.values;
+  if(kind === 'current'){
+    const feats = ['Current A Avg', 'Current B Avg', 'Current C Avg'];
+    if(!feats.every(f => typeof v[f] === 'number' && !Number.isNaN(v[f]))) return null;
+    return (v[feats[0]] + v[feats[1]] + v[feats[2]]) / 3;
+  }
+  if(kind === 'voltage'){
+    const feats = ['Vrms ph-n AN Avg', 'Vrms ph-n BN Avg'];
+    if(!feats.every(f => typeof v[f] === 'number' && !Number.isNaN(v[f]))) return null;
+    return (v[feats[0]] + v[feats[1]]) / 2;
+  }
+  if(kind === 'power') return typeof v['Apparent Power Total Avg'] === 'number' && !Number.isNaN(v['Apparent Power Total Avg']) ? v['Apparent Power Total Avg'] : null;
+  if(kind === 'cosphi') return typeof v['Cos Phi Total Avg'] === 'number' && !Number.isNaN(v['Cos Phi Total Avg']) ? v['Cos Phi Total Avg'] : null;
+  return null;
+}
+
+function renderSparkline(elId, points, color){
+  const host = document.getElementById(elId);
+  if(!host) return;
+  const valid = points.filter(v => typeof v === 'number' && !Number.isNaN(v));
+  if(valid.length < 2){
+    host.innerHTML = '';
+    host.className = 'kpi-spark-empty';
+    return;
+  }
+  host.className = 'kpi-spark';
+  const w = 200, h = 34, pad = 2;
+  let min = Math.min(...valid), max = Math.max(...valid);
+  if(min === max){ min -= Math.abs(min || 1) * 0.05; max += Math.abs(max || 1) * 0.05; }
+  const stepX = points.length > 1 ? (w - pad*2) / (points.length - 1) : 0;
+  function yFor(v){
+    const norm = (v - min) / (max - min);
+    return h - pad - norm*(h - pad*2);
+  }
+  let d = '', firstX = null, lastX = null;
+  points.forEach((v,i)=>{
+    if(typeof v !== 'number' || Number.isNaN(v)) return; // hueco: esa lectura no traía esta variable
+    const x = pad + i*stepX;
+    const y = yFor(v);
+    if(firstX === null){ firstX = x; d += 'M' + x.toFixed(1) + ' ' + y.toFixed(1) + ' '; }
+    else d += 'L' + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    lastX = x;
+  });
+  const gradId = 'grad-' + elId;
+  const areaPath = `${d}L${lastX.toFixed(1)} ${(h-pad).toFixed(1)} L${firstX.toFixed(1)} ${(h-pad).toFixed(1)} Z`;
+  host.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+      <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none"/>
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+}
+
+function buildKPISparklines(){
+  renderSparkline('spark-current', valueHistory.map(pt => kpiSeriesValue(pt, 'current')), '#37B6E8');
+  renderSparkline('spark-voltage', valueHistory.map(pt => kpiSeriesValue(pt, 'voltage')), '#2ECC71');
+  renderSparkline('spark-power', valueHistory.map(pt => kpiSeriesValue(pt, 'power')), '#F5A623');
+  renderSparkline('spark-cosphi', valueHistory.map(pt => kpiSeriesValue(pt, 'cosphi')), '#37B6E8');
 }
 
 /* ---------------- PATH VISUALIZATION (root -> leaf) ---------------- */
@@ -1564,6 +1488,7 @@ function recompute(opts){
   buildPathViz(result, meta);
   buildQualityIndices();
   pushValueHistory(cls);
+  buildKPISparklines();
   buildTrendChart();
   buildConfidence(result);
 
@@ -1790,13 +1715,6 @@ function generateCurrentReportText(){
   lines.push('Calidad de energía (lectura actual): ' + pq.verdict + ' — ' + pq.verdictText);
   pq.details.forEach(d => lines.push('  - ' + d.text.replace(/<\/?b>/g,'')));
   lines.push('');
-  const ra = buildRiskAnalysis(r);
-  lines.push(`Análisis de riesgo: puntaje ${ra.score}/100 — Urgencia: ${ra.urgency}`);
-  if(ra.aggravantes.length){
-    lines.push('Consecuencias si persiste:');
-    ra.aggravantes.forEach(f => lines.push(`  - ${f.name}: ${f.consequence}`));
-  }
-  lines.push('');
   lines.push('Recomendaciones:');
   buildRecommendations(r.predicted, r.path).forEach(rec => lines.push('  - ' + rec.text));
   return lines.join('\n');
@@ -1821,12 +1739,6 @@ function generateHistoricalReportText(){
   lines.push(d.diagnosisText.replace(/<\/?b>/g,''));
   lines.push('');
   lines.push('Tendencia: ' + d.trendText.replace(/<\/?b>/g,''));
-  lines.push('');
-  lines.push(`Análisis de riesgo del historial: puntaje promedio ${d.risk.scoreAvg}/100 — Urgencia: ${d.risk.urgency}`);
-  if(d.risk.factors.length){
-    lines.push('Factores más frecuentes y sus consecuencias si persisten:');
-    d.risk.factors.forEach(f => lines.push(`  - ${f.name} (${f.count} de ${d.total} lecturas, ${f.pct}%): ${f.consequence}`));
-  }
   lines.push('');
   lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text.replace(/<\/?b>/g,''));
   lines.push('');
@@ -1892,11 +1804,6 @@ document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
     <h4>Tendencia</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿La situación está mejorando o empeorando con el tiempo?</p>
     <p>${d.trendText}</p>
-    <h4>Análisis de riesgo del historial</h4>
-    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Puntaje promedio de riesgo (misma escala 0-100 del panel) y las variables que con más frecuencia empujaron el resultado hacia un riesgo mayor.</p>
-    <p>Puntaje promedio: <b>${d.risk.scoreAvg} / 100</b></p>
-    ${d.risk.factors.length ? `<ul style="line-height:1.9; margin:0; padding-left:18px;">${d.risk.factors.map(f=>`<li><b>${f.name}</b> — factor en ${f.count} de ${d.total} lecturas (${f.pct}%): ${f.consequence}</li>`).join('')}</ul>` : '<p>No se identificaron variables fuera de rango en el historial.</p>'}
-    <p style="margin-top:8px; color:${d.risk.urgencyColor}; font-weight:600;">Urgencia: ${d.risk.urgency}</p>
     <h4>Calidad de energía agregada</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Voltaje, corriente y factor de potencia, evaluados en conjunto para todas las lecturas del historial.</p>
     <p>Veredicto: <b style="color:${d.pq.color}">${d.pq.verdict}</b> — ${d.pq.text}</p>
@@ -1931,10 +1838,6 @@ document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
   const recs = buildRecommendations(r.predicted, r.path).map(x=>`<li>${x.icon} ${x.text}</li>`).join('');
   const pq = buildPowerQualityDiagnosis();
   const pqRows = pq.details.map(d => `<li>${d.icon} ${d.text}</li>`).join('');
-  const ra = buildRiskAnalysis(r);
-  const raConsequences = ra.aggravantes.length
-    ? ra.aggravantes.map(f => `<li><b>${f.name}</b>: ${f.consequence}</li>`).join('')
-    : `<li>No hay variables fuera de rango en esta lectura — sin consecuencias esperadas.</li>`;
   const body = `
     <h4>Resultado y nivel de riesgo</h4>
     <p>Clasificación: <b style="color:${meta.colorHex}">${meta.label}</b> · Nivel de riesgo: <b style="color:${meta.colorHex}">${meta.riesgo}</b></p>
@@ -1943,11 +1846,6 @@ document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
     <p>${buildDiagnosis(r.predicted, r.path)}</p>
     <h4>Reglas que aplicó el árbol de decisión, paso a paso</h4>
     <ol>${steps}<li>En conjunto, estas condiciones llevan al sistema a asignar la clase <b style="color:${meta.colorHex}">${meta.label}</b>.</li></ol>
-    <h4>Análisis de riesgo</h4>
-    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Puntaje en la escala de riesgo del árbol y qué podría pasar si esto persiste.</p>
-    <p>Puntaje: <b>${ra.score} / 100</b></p>
-    <ul style="line-height:1.9; margin:0; padding-left:18px;">${raConsequences}</ul>
-    <p style="margin-top:8px; color:${ra.urgencyColor}; font-weight:600;">Urgencia: ${ra.urgency}</p>
     <h4>Calidad de la energía (voltaje, corriente y factor de potencia)</h4>
     <p>Veredicto: <b style="color:${pq.verdictColor}">${pq.verdict}</b> — ${pq.verdictText}</p>
     <ul style="list-style:none; margin:0 0 4px 0; padding:0; line-height:1.9;">${pqRows}</ul>
