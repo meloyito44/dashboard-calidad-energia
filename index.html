@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel Inteligente — Calidad de Energía</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
@@ -12,7 +13,7 @@
     --panel-2:#182238;
     --line:#26324A;
     --ink:#E7ECF5;
-    --ink-dim:#8C9AB5;
+    --ink-dim:#9BA8C2;
     --accent:#37B6E8;
     --green:#2ECC71;
     --amber:#F5A623;
@@ -126,11 +127,13 @@
   .diag-text b{ color:var(--ink); }
 
   /* gauge */
-  .gauge-wrap{ display:flex; flex-direction:column; align-items:center; margin-top:6px; }
-  .gauge-label{ font-size:11px; color:var(--ink-dim); margin-top:2px; text-align:center; }
-  .gauge-value{ font-size:20px; font-weight:700; font-family:'IBM Plex Mono', monospace; margin-top:-38px; }
+  .gauge-wrap{ display:flex; flex-direction:column; align-items:center; }
+  .gauge-value{ font-size:20px; font-weight:700; font-family:'IBM Plex Mono', monospace; margin-top:2px; text-align:center; }
+  .gauge-legend{ display:flex; gap:16px; font-size:11px; color:var(--ink-dim); margin-top:8px; }
 
   /* comparison bars */
+  .cmp-title{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:12px; }
+  .cmp-divider{ height:1px; background:var(--line); margin:18px 0 16px 0; }
   .cmp-row{ margin-bottom:14px; } .cmp-row:last-child{ margin-bottom:0; }
   .cmp-head{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
   .cmp-head .n{ font-weight:600; color:var(--ink); }
@@ -234,6 +237,34 @@
     .sidebar{ width:100%; position:static; flex-direction:row; flex-wrap:wrap; }
     .kpi-strip{ grid-template-columns:repeat(2, 1fr); }
   }
+  @media (max-width: 480px){
+    .kpi-strip{ grid-template-columns:repeat(1, 1fr); }
+    body{ padding:14px; }
+    .statusbar{ padding:14px; }
+  }
+
+  /* ---- encabezados de zona (arquitectura de informacion) ---- */
+  .zone-label{ display:flex; align-items:center; gap:10px; margin:22px 0 10px 0; }
+  .zone-label .zn{ width:22px; height:22px; border-radius:7px; background:var(--panel-2); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--accent); flex-shrink:0; }
+  .zone-label .zt{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-dim); }
+  .zone-label:first-child{ margin-top:0; }
+
+  /* ---- grupos de acciones ---- */
+  .action-groups{ display:flex; flex-direction:column; gap:14px; }
+  .action-group-title{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-dim); margin-bottom:8px; }
+  .action-group-buttons{ display:flex; flex-wrap:wrap; gap:10px; }
+
+  /* ---- icono de accion via tabler ---- */
+  .action-btn .ico, .navlink .ico, .brand .bolt i{ display:inline-flex; }
+
+  /* ---- iconos y puntos de estado en texto generado (reemplazo de emoji) ---- */
+  .rec-list .ico-inline, li .ico-inline{ color:var(--accent); margin-right:5px; font-size:13px; vertical-align:-1px; }
+  .stat-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px; }
+  .stat-dot-red{ background:var(--red); }
+  .stat-dot-amber{ background:var(--amber); }
+  .stat-dot-green{ background:var(--green); }
+  .stat-dot-gray{ background:var(--ink-dim); }
 </style>
 </head>
 <body>
@@ -247,8 +278,8 @@
     </div>
     <a class="navlink active" href="#resumen"><span class="ico">🏠</span>Resumen general</a>
     <a class="navlink" href="#indices"><span class="ico">📐</span>Índices de calidad</a>
+    <a class="navlink" href="#explicacion"><span class="ico">🌳</span>Explicación del modelo</a>
     <a class="navlink" href="#variables"><span class="ico">🎛️</span>Variables del medidor</a>
-    <a class="navlink" href="#arbol"><span class="ico">🌳</span>Recorrido del árbol</a>
     <a class="navlink" href="#acciones"><span class="ico">🧭</span>Acciones sugeridas</a>
     <a class="navlink" href="#historial"><span class="ico">📊</span>Historial de sesión</a>
     <div class="sidebar-foot">
@@ -260,7 +291,9 @@
 
 <div class="wrap">
 
-  <div class="statusbar" id="resumen">
+  <div class="zone-label" id="resumen"><span class="zn">1</span><span class="zt">Cabecera de estado</span></div>
+
+  <div class="statusbar">
     <div class="semaforo" id="semaforo-dot"></div>
     <div>
       <div class="status-text" id="status-text">—</div>
@@ -281,7 +314,10 @@
   <div class="upload-card" id="upload-card">
     <div>
       <h3>📁 Cargar histórico y reentrenar el árbol (Excel/CSV)</h3>
-      <div class="footnote">Al subir el archivo, el sistema entrena un árbol de decisión nuevo específicamente con esos datos (no reutiliza el anterior) y actualiza todo el panel con él. Por dentro corre el mismo proceso del notebook original: limpieza, normalización Min-Max, cálculo de terciles del target y <code>DecisionTreeClassifier</code> — ejecutado con Python real dentro del navegador (Pyodide), sin enviar tus datos a ningún servidor. La primera carga tarda ~30–90s mientras se instala el entorno Python.</div>
+      <details class="secondary">
+        <summary><span class="chev">▶</span> Cómo funciona la carga</summary>
+        <div class="footnote" style="margin-top:8px;">Al subir el archivo, el sistema entrena un árbol de decisión nuevo específicamente con esos datos (no reutiliza el anterior) y actualiza todo el panel con él. Por dentro corre el mismo proceso del notebook original: limpieza, normalización Min-Max, cálculo de terciles del target y <code>DecisionTreeClassifier</code> — ejecutado con Python real dentro del navegador (Pyodide), sin enviar tus datos a ningún servidor. La primera carga tarda ~30–90s mientras se instala el entorno Python.</div>
+      </details>
       <div id="upload-errors"></div>
     </div>
     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
@@ -346,6 +382,8 @@
     </div>
   </div>
 
+  <div class="zone-label" id="explicacion"><span class="zn">2</span><span class="zt">Explicación del modelo</span></div>
+
   <!-- ROW 1b: resumen + gauge | diagnostico | panorama rapido -->
   <div class="grid">
     <div class="card c3">
@@ -363,16 +401,18 @@
 
     <div class="card c5">
       <h3>Nivel de riesgo — panorama rápido</h3>
-      <div style="display:flex; align-items:center; gap:18px;">
-        <div class="gauge-wrap">
-          <svg id="gauge-svg" width="150" height="90" viewBox="0 0 150 90"></svg>
-          <div class="gauge-value" id="gauge-value">—</div>
-          <div class="gauge-label">Posición dentro del rango de decisión</div>
-        </div>
-        <div style="flex:1;">
-          <div id="cmp-container"></div>
+      <div class="gauge-wrap">
+        <svg id="gauge-svg" width="220" height="136" viewBox="0 0 220 136" role="img" aria-label="Gauge de nivel de riesgo"></svg>
+        <div class="gauge-value" id="gauge-value">—</div>
+        <div class="gauge-legend">
+          <span><span class="legend-dot" style="background:#2ECC71;"></span>Bajo</span>
+          <span><span class="legend-dot" style="background:#F5A623;"></span>Medio</span>
+          <span><span class="legend-dot" style="background:#F0523E;"></span>Alto</span>
         </div>
       </div>
+      <div class="cmp-divider"></div>
+      <div class="cmp-title">Comparación con el rango normal</div>
+      <div id="cmp-container"></div>
     </div>
   </div>
 
@@ -390,7 +430,10 @@
       <h3>Tendencia de la sesión — variables clave</h3>
       <div id="trend-chart"></div>
       <div id="trend-legend" style="margin-top:10px; font-size:11.5px; color:var(--ink-dim);"></div>
-      <div class="footnote">Este gráfico compara la evolución de varias variables a la vez, aunque tengan escalas muy distintas (amperios, voltios, vatios) — cada línea se ajusta a su propio rango real (mínimo–máximo del dataset de entrenamiento vigente) para que sean comparables visualmente. Se muestran las últimas 30 lecturas de la sesión (cada movimiento de un control cuenta como una lectura nueva). Si el archivo cargado no incluye alguna variable, esa línea se omite; si no incluye ninguna de las 4 variables clásicas (corriente, voltaje, potencia, cos φ), el panel grafica en su lugar hasta 4 variables reales que el árbol sí está usando, y lo indica debajo del gráfico.</div>
+      <details class="secondary">
+        <summary><span class="chev">▶</span> Cómo leer este gráfico</summary>
+        <div class="footnote" style="margin-top:8px;">Este gráfico compara la evolución de varias variables a la vez, aunque tengan escalas muy distintas (amperios, voltios, vatios) — cada línea se ajusta a su propio rango real (mínimo–máximo del dataset de entrenamiento vigente) para que sean comparables visualmente. Se muestran las últimas 30 lecturas de la sesión (cada movimiento de un control cuenta como una lectura nueva). Si el archivo cargado no incluye alguna variable, esa línea se omite; si no incluye ninguna de las 4 variables clásicas (corriente, voltaje, potencia, cos φ), el panel grafica en su lugar hasta 4 variables reales que el árbol sí está usando, y lo indica debajo del gráfico.</div>
+      </details>
     </div>
     <div class="card c4">
       <h3>Confiabilidad de la clasificación</h3>
@@ -400,8 +443,10 @@
     </div>
   </div>
 
+  <div class="zone-label" id="variables"><span class="zn">3</span><span class="zt">Controles de entrada — simula un escenario</span></div>
+
   <!-- ROW 2: sliders | variables criticas | recomendaciones -->
-  <div class="grid" id="variables">
+  <div class="grid">
     <div class="card c4">
       <h3>Lectura del medidor — variables principales</h3>
       <div id="slider-primary"></div>
@@ -426,25 +471,43 @@
     </div>
   </div>
 
+  <div class="zone-label" id="acciones"><span class="zn">4</span><span class="zt">Acciones sugeridas</span></div>
+
   <!-- ROW 3: acciones -->
-  <div class="grid" id="acciones">
+  <div class="grid">
     <div class="card c12">
-      <h3>Acciones sugeridas</h3>
-      <div class="actions">
-        <button class="action-btn" id="btn-detalle"><span class="ico">🔍</span>Ver detalle</button>
-        <button class="action-btn" id="btn-analizar"><span class="ico">🧭</span>Analizar registro</button>
-        <button class="action-btn" id="btn-riesgo"><span class="ico">🚨</span>Análisis de riesgo</button>
-        <button class="action-btn" id="btn-historico"><span class="ico">📊</span>Comparar histórico</button>
-        <button class="action-btn" id="btn-calidad"><span class="ico">📐</span>Diagnóstico de calidad de energía</button>
-        <button class="action-btn" id="btn-historico-diag"><span class="ico">📈</span>Diagnóstico histórico general</button>
-        <button class="action-btn" id="btn-exportar"><span class="ico">📄</span>Exportar reporte</button>
-        <button class="action-btn" id="btn-diagnostico"><span class="ico">🩺</span>Generar diagnóstico</button>
+      <div class="action-groups">
+        <div>
+          <div class="action-group-title">Explorar esta lectura</div>
+          <div class="action-group-buttons">
+            <button class="action-btn" id="btn-detalle"><span class="ico">🔍</span>Ver detalle</button>
+            <button class="action-btn" id="btn-analizar"><span class="ico">🧭</span>Analizar registro</button>
+            <button class="action-btn" id="btn-diagnostico"><span class="ico">🩺</span>Generar diagnóstico</button>
+          </div>
+        </div>
+        <div>
+          <div class="action-group-title">Riesgo y calidad de energía</div>
+          <div class="action-group-buttons">
+            <button class="action-btn" id="btn-riesgo"><span class="ico">🚨</span>Análisis de riesgo</button>
+            <button class="action-btn" id="btn-calidad"><span class="ico">📐</span>Diagnóstico de calidad de energía</button>
+          </div>
+        </div>
+        <div>
+          <div class="action-group-title">Histórico y exportar</div>
+          <div class="action-group-buttons">
+            <button class="action-btn" id="btn-historico"><span class="ico">📊</span>Comparar histórico</button>
+            <button class="action-btn" id="btn-historico-diag"><span class="ico">📈</span>Diagnóstico histórico general</button>
+            <button class="action-btn" id="btn-exportar"><span class="ico">📄</span>Exportar reporte</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
+  <div class="zone-label" id="historial"><span class="zn">5</span><span class="zt">Histórico y distribución de la sesión</span></div>
+
   <!-- ROW 4: historial -->
-  <div class="grid" id="historial">
+  <div class="grid">
     <div class="card c8">
       <h3>Historial / Tendencia (lecturas registradas en esta sesión)</h3>
       <div class="hist-wrap" id="hist-wrap"></div>
@@ -459,7 +522,7 @@
     <div class="card c4">
       <h3>Distribución de la sesión</h3>
       <div style="display:flex; align-items:center; gap:16px;">
-        <svg id="donut-svg" width="96" height="96" viewBox="0 0 96 96"></svg>
+        <svg id="donut-svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Distribución de resultados de la sesión"></svg>
         <div id="donut-legend" style="font-size:12px; color:var(--ink-dim); line-height:1.9;"></div>
       </div>
     </div>
@@ -557,11 +620,11 @@ const LABELS = {
 
 const CLASS_META = {
   low:    {colorHex:'#2ECC71', label:'Bajo consumo', riesgo:'Riesgo bajo',
-           statusText:'Calidad de energía: NORMAL', statusSub:'Consumo dentro de los rangos habituales', gaugePos:18},
+           statusText:'Calidad de energía: NORMAL', statusSub:'Consumo dentro de los rangos habituales'},
   medium: {colorHex:'#F5A623', label:'Consumo moderado', riesgo:'Riesgo medio',
-           statusText:'Calidad de energía: MODERADA', statusSub:'Se recomienda mantener monitoreo activo', gaugePos:50},
+           statusText:'Calidad de energía: MODERADA', statusSub:'Se recomienda mantener monitoreo activo'},
   high:   {colorHex:'#F0523E', label:'Consumo elevado', riesgo:'Riesgo alto',
-           statusText:'Calidad de energía: ELEVADA — requiere atención', statusSub:'Se recomienda revisar la carga asociada', gaugePos:85},
+           statusText:'Calidad de energía: ELEVADA — requiere atención', statusSub:'Se recomienda revisar la carga asociada'},
 };
 
 let currentValues = {};
@@ -639,18 +702,24 @@ function buildSliders(){
         <span class="slider-name">${info.name}</span>
         <span class="slider-value mono" id="val-${cssId(feat)}"></span>
       </div>
-      <input type="range" id="slider-${cssId(feat)}" min="${stats.min}" max="${stats.max}" step="${step}" value="${currentValues[feat]}">
+      <input type="range" id="slider-${cssId(feat)}" min="${stats.min}" max="${stats.max}" step="${step}" value="${currentValues[feat]}"
+        aria-label="${info.name}" aria-valuemin="${stats.min}" aria-valuemax="${stats.max}" aria-valuenow="${currentValues[feat]}" aria-valuetext="${fmt(currentValues[feat], feat)}">
       <div class="slider-range"><span>${fmt(stats.min, feat)}</span><span>${fmt(stats.max, feat)}</span></div>
       ${warnHtml}
     `;
     host.appendChild(row);
     const input = row.querySelector('input');
     if (isPowerFactorFeat(feat)) updateSliderWarning(feat);
+    let debounceTimer = null;
     input.addEventListener('input', () => {
       currentValues[feat] = parseFloat(input.value);
-      document.getElementById('val-' + cssId(feat)).textContent = fmt(currentValues[feat], feat);
+      const valText = fmt(currentValues[feat], feat);
+      document.getElementById('val-' + cssId(feat)).textContent = valText;
+      input.setAttribute('aria-valuenow', currentValues[feat]);
+      input.setAttribute('aria-valuetext', valText);
       if (isPowerFactorFeat(feat)) updateSliderWarning(feat);
-      recompute();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(recompute, 60);
     });
   }
   primaryFeats.forEach(f => makeSlider(f, primaryHost));
@@ -662,7 +731,11 @@ function refreshSliderDisplays(){
     if(!LABELS[feat]) return;
     const input = document.getElementById('slider-' + cssId(feat));
     const val = document.getElementById('val-' + cssId(feat));
-    if(input){ input.value = currentValues[feat]; }
+    if(input){
+      input.value = currentValues[feat];
+      input.setAttribute('aria-valuenow', currentValues[feat]);
+      input.setAttribute('aria-valuetext', fmt(currentValues[feat], feat));
+    }
     if(val){ val.textContent = fmt(currentValues[feat], feat); }
     const warn = document.getElementById('warn-' + cssId(feat));
     if(warn){
@@ -689,22 +762,73 @@ function arcPath(cx, cy, r, startAngle, endAngle){
   const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 0 ${e.x} ${e.y}`;
 }
-function buildGauge(pct, colorHex){
+/* ---------------- GAUGE SCORE (posición real dentro del rango de la clase) ---------------- */
+// A diferencia de un valor fijo por clase, esta posición se calcula a partir del
+// último nodo de decisión del recorrido real del árbol: qué tan lejos está el
+// valor real de esta lectura respecto al umbral que definió esa rama, en
+// proporción al espacio disponible hasta el límite físico de esa variable.
+// Así, dos lecturas clasificadas como "medio" no se ven idénticas en el gauge
+// si una apenas cruzó el umbral y la otra está muy adentro de la rama — y el
+// resultado siempre queda dentro del tercio del gauge que corresponde a su clase.
+function computeGaugeScore(result){
+  const zoneOrder = {low:0, medium:1, high:2};
+  const idx = zoneOrder[result.predicted];
+  const zoneMin = idx * (100/3);
+  const zoneMax = (idx + 1) * (100/3);
+
+  const path = result.path;
+  let frac = 0.5;
+  if (path.length){
+    const last = path[path.length - 1];
+    const node = TREE.nodes[last.nodeId];
+    const threshold = node.threshold; // 0-1, ya normalizado
+    const normVal = normalize(last.feature, last.realVal);
+    const goneRight = last.direction === 'right';
+    const margin = goneRight ? (normVal - threshold) : (threshold - normVal);
+    const room = goneRight ? (1 - threshold) : threshold;
+    frac = room > 0 ? Math.max(0, Math.min(1, margin / room)) : 0.5;
+  }
+  const score = zoneMin + frac * (zoneMax - zoneMin);
+  // margen de seguridad de 1 punto para que la aguja nunca quede pegada a la línea divisoria de zona
+  return Math.max(zoneMin + 1, Math.min(zoneMax - 1, score));
+}
+
+function buildGauge(pct, colorHex, riesgoLabel){
   const svg = document.getElementById('gauge-svg');
-  const cx = 75, cy = 80, r = 62;
-  const bgSegs = [
-    {from:0, to:60, color:'#1F5A38'},
-    {from:60, to:120, color:'#7A5416'},
-    {from:120, to:180, color:'#7A2A20'},
+  const cx = 110, cy = 112, r = 88;
+  const zones = [
+    {from:0, to:60, color:'#1F5A38', label:'BAJO'},
+    {from:60, to:120, color:'#7A5416', label:'MEDIO'},
+    {from:120, to:180, color:'#7A2A20', label:'ALTO'},
   ];
-  let paths = bgSegs.map(seg => `<path d="${arcPath(cx,cy,r,seg.from,seg.to)}" stroke="${seg.color}" stroke-width="14" fill="none" stroke-linecap="butt"/>`).join('');
-  const needleAngle = (pct/100)*180;
-  const tip = polarToCartesian(cx, cy, r-6, needleAngle);
+  // Bandas de color de fondo (cada una representa un tercio del rango de decisión)
+  let paths = zones.map(z => `<path d="${arcPath(cx,cy,r,z.from,z.to)}" stroke="${z.color}" stroke-width="16" fill="none" stroke-linecap="butt"/>`).join('');
+
+  // Etiquetas BAJO / MEDIO / ALTO centradas dentro de cada banda, para que se lea de un vistazo
+  // en qué zona está el resultado sin necesitar la leyenda de abajo.
+  zones.forEach(z=>{
+    const mid = (z.from + z.to) / 2;
+    const p = polarToCartesian(cx, cy, r, mid);
+    paths += `<text x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="middle" font-size="9.5" font-weight="700" fill="#0B1220" font-family="'IBM Plex Mono', monospace">${z.label}</text>`;
+  });
+
+  // Marcas numéricas 0 / 50 / 100 justo debajo del arco, para dar una referencia de escala real
+  [0, 50, 100].forEach(v=>{
+    const angle = (v/100) * 180;
+    const p = polarToCartesian(cx, cy, r + 14, angle);
+    paths += `<text x="${p.x}" y="${p.y}" text-anchor="middle" font-size="9" fill="#5B6A87" font-family="'IBM Plex Mono', monospace">${v}</text>`;
+  });
+
+  // Aguja: apunta a la posición exacta (0-100%) dentro del rango de decisión
+  const needleAngle = (pct/100) * 180;
+  const tip = polarToCartesian(cx, cy, r - 6, needleAngle);
   paths += `<line x1="${cx}" y1="${cy}" x2="${tip.x}" y2="${tip.y}" stroke="${colorHex}" stroke-width="3.5" stroke-linecap="round"/>`;
-  paths += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${colorHex}" />`;
+  paths += `<circle cx="${cx}" cy="${cy}" r="6" fill="${colorHex}" stroke="#0B1220" stroke-width="2"/>`;
   svg.innerHTML = paths;
-  document.getElementById('gauge-value').textContent = Math.round(pct) + '%';
-  document.getElementById('gauge-value').style.color = colorHex;
+
+  // Valor central: porcentaje + el nivel de riesgo en palabras, no solo un número suelto.
+  const valueEl = document.getElementById('gauge-value');
+  valueEl.innerHTML = `${Math.round(pct)}% <span style="font-weight:400; font-size:13px; color:${colorHex};">· ${riesgoLabel}</span>`;
 }
 
 /* ---------------- COMPARISON BARS ---------------- */
@@ -824,7 +948,7 @@ const RISK_CONSEQUENCES = {
 function buildRiskAnalysis(result){
   const cls = result.predicted;
   const meta = CLASS_META[cls];
-  const score = meta.gaugePos; // 0-100, misma escala que el gauge del panel
+  const score = Math.round(computeGaugeScore(result)); // misma escala y misma lógica que el gauge del panel
 
   const factors = result.path.map((s,i)=>{
     const info = LABELS[s.feature] || {name: s.feature, unit:''};
@@ -1492,16 +1616,13 @@ function recompute(opts){
   buildTrendChart();
   buildConfidence(result);
 
-  // gauge: position within the class's zone, based on the two primary features' normalized average
-  let primaryFeats = TREE.used_features.filter(f => LABELS[f] && LABELS[f].primary && featAvailable(f));
-  if (primaryFeats.length === 0) primaryFeats = TREE.used_features.filter(featAvailable);
-  const avgNorm = primaryFeats.length
-    ? primaryFeats.reduce((s,f)=> s + normalize(f, currentValues[f]), 0) / primaryFeats.length
-    : (order[cls] + 0.5) / 3; // sin variables numéricas de referencia, usar la clase predicha
-  const gaugePct = Math.max(2, Math.min(98, avgNorm*100*3.2));
-  buildGauge(gaugePct, meta.colorHex);
+  // gauge: posición real dentro del rango de la clase (ver computeGaugeScore)
+  const gaugePct = computeGaugeScore(result);
+  buildGauge(gaugePct, meta.colorHex, meta.riesgo);
 
   // comparison chart + variable cards: primary two always + any secondary feature that appeared in this path
+  let primaryFeats = TREE.used_features.filter(f => LABELS[f] && LABELS[f].primary && featAvailable(f));
+  if (primaryFeats.length === 0) primaryFeats = TREE.used_features.filter(featAvailable);
   const pathFeats = [...new Set(result.path.map(p=>p.feature))];
   const showFeats = [...new Set([...primaryFeats, ...pathFeats])];
   buildComparisonChart(showFeats, pathFeats, meta.colorHex);
@@ -1774,7 +1895,7 @@ function openExportTextModal(text){
 document.getElementById('btn-exportar').addEventListener('click', ()=>{
   const body = `
     <h4>¿Qué diagnóstico quieres exportar?</h4>
-    <p style="color:#8C9AB5;">Elige si el reporte debe cubrir solo la lectura que estás viendo ahora, o un resumen de todas las lecturas evaluadas en esta sesión.</p>
+    <p style="color:var(--ink-dim);">Elige si el reporte debe cubrir solo la lectura que estás viendo ahora, o un resumen de todas las lecturas evaluadas en esta sesión.</p>
     <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
       <button class="action-btn" id="export-choice-actual" style="justify-content:flex-start;">📍 Diagnóstico de la lectura actual</button>
       <button class="action-btn" id="export-choice-historico" style="justify-content:flex-start;">📈 Diagnóstico general del histórico</button>
