@@ -126,6 +126,25 @@
   .diag-text{ font-size:14.5px; line-height:1.6; color:#D6DEEC; }
   .diag-text b{ color:var(--ink); }
 
+  /* confianza de la clasificacion */
+  .conf-level-badge{ margin-bottom:14px; }
+  .conf-pct{ font-family:'IBM Plex Mono', monospace; font-size:32px; font-weight:700; line-height:1.1; }
+  .conf-tier{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+  .conf-scale-wrap{ margin:6px 0 14px 0; }
+  .conf-scale-track{ position:relative; height:9px; border-radius:5px; overflow:visible; display:flex; }
+  .conf-scale-seg:first-child{ border-radius:5px 0 0 5px; }
+  .conf-scale-seg:last-child{ border-radius:0 5px 5px 0; }
+  .conf-scale-marker{ position:absolute; top:-3px; width:2px; height:15px; background:var(--ink);
+    box-shadow:0 0 0 2px var(--panel); border-radius:1px; transform:translateX(-1px); transition:left .3s ease; }
+  .conf-scale-ticks{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-dim);
+    margin-top:5px; font-family:'IBM Plex Mono', monospace; }
+  .conf-class-row{ font-size:12.5px; color:var(--ink-dim); margin-bottom:8px; }
+  .conf-class-row b{ letter-spacing:.03em; }
+  .conf-interpret{ font-size:12.5px; line-height:1.55; color:#C6CEDE; }
+  .conf-support-note{ font-size:11px; color:var(--ink-dim); margin-top:8px; line-height:1.5; }
+  .info-btn{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:12.5px; padding:0; }
+  .info-btn:hover{ color:var(--accent); }
+
   /* gauge */
   .gauge-wrap{ display:flex; flex-direction:column; align-items:center; }
   .gauge-value{ font-size:20px; font-weight:700; font-family:'IBM Plex Mono', monospace; margin-top:2px; text-align:center; }
@@ -437,9 +456,36 @@
     </div>
     <div class="card c4">
       <h3>Confiabilidad de la clasificación</h3>
-      <div class="idx-value" id="conf-value">—</div>
-      <div class="idx-bar-track"><div class="idx-bar-fill" id="conf-bar"></div></div>
-      <div class="idx-note" id="conf-note">—</div>
+
+      <div class="conf-level-badge">
+        <div class="conf-pct" id="conf-pct">—</div>
+        <div class="conf-tier" id="conf-tier">—</div>
+      </div>
+
+      <div class="conf-scale-wrap">
+        <div class="conf-scale-track">
+          <div class="conf-scale-seg" style="flex-basis:15%; background:#F0523E;"></div>
+          <div class="conf-scale-seg" style="flex-basis:25%; background:#F2884A;"></div>
+          <div class="conf-scale-seg" style="flex-basis:25%; background:#F5A623;"></div>
+          <div class="conf-scale-seg" style="flex-basis:20%; background:#6FCB6A;"></div>
+          <div class="conf-scale-seg" style="flex-basis:15%; background:#2ECC71;"></div>
+          <div class="conf-scale-marker" id="conf-scale-marker"></div>
+        </div>
+        <div class="conf-scale-ticks"><span>0</span><span>15</span><span>40</span><span>65</span><span>85</span><span>100</span></div>
+      </div>
+
+      <div class="conf-class-row">Clasificación: <b id="conf-class-label">—</b></div>
+      <div class="conf-interpret" id="conf-interpret">—</div>
+      <div class="conf-support-note" id="conf-support-note">—</div>
+
+      <details class="explain">
+        <summary><span class="chev">▶</span> ¿Por qué esta confianza?</summary>
+        <div class="explain-body" id="conf-why-body">—</div>
+      </details>
+      <details class="explain" id="conf-info-details">
+        <summary><span class="chev">▶</span> ⓘ ¿Qué significa este número?</summary>
+        <div class="explain-body">La confianza indica qué tan claramente la lectura actual está respaldada por las reglas de decisión de este árbol: qué tan lejos quedó del umbral que definió su clasificación, y cuántos casos históricos similares respaldan esa rama. <b>No es una probabilidad estadística calibrada</b> ni el <i>accuracy</i> del modelo — ese sería el desempeño general del modelo evaluado sobre todo el conjunto de datos, una métrica distinta que este panel no calcula. Este número describe únicamente la solidez de <i>esta</i> clasificación puntual.</div>
+      </details>
     </div>
   </div>
 
@@ -647,8 +693,8 @@ function normalize(feat, value){
   return (value - s.min) / (s.max - s.min);
 }
 
-function traverseTree(realValues){
-  let nodeId = 0;
+function traverseTree(realValues, startNodeId){
+  let nodeId = startNodeId || 0;
   const path = [];
   while(true){
     const node = TREE.nodes[nodeId];
@@ -762,32 +808,47 @@ function arcPath(cx, cy, r, startAngle, endAngle){
   const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 0 ${e.x} ${e.y}`;
 }
+/* ---------------- NODO CRÍTICO (compartido entre gauge y confianza) ---------------- */
+// El "nodo crítico" es el último split del recorrido: el que finalmente llevó
+// a la hoja. De ahí se extrae, con datos 100% reales del árbol:
+//   - la variable y el umbral que decidieron el resultado,
+//   - el margen real (en unidades físicas) entre la lectura y ese umbral,
+//   - frac: qué fracción del espacio disponible en esa rama consumió la lectura
+//     antes de llegar a la hoja (0 = justo sobre el umbral, 1 = en el extremo
+//     opuesto del rango de esa variable).
+function getCriticalNodeInfo(result){
+  const path = result.path;
+  if (!path.length) return null;
+  const last = path[path.length - 1];
+  const node = TREE.nodes[last.nodeId];
+  const stats = TREE.feature_stats[last.feature];
+  const threshold = node.threshold; // normalizado 0-1
+  const normVal = normalize(last.feature, last.realVal);
+  const goneRight = last.direction === 'right';
+  const margin = goneRight ? (normVal - threshold) : (threshold - normVal);
+  const room = goneRight ? (1 - threshold) : threshold;
+  const frac = room > 0 ? Math.max(0, Math.min(1, margin / room)) : 0.5;
+  const marginReal = Math.abs(last.realVal - last.thresholdReal);
+  return {
+    feature: last.feature, nodeId: last.nodeId, direction: last.direction,
+    thresholdReal: last.thresholdReal, realVal: last.realVal,
+    marginReal, frac, stats
+  };
+}
+
 /* ---------------- GAUGE SCORE (posición real dentro del rango de la clase) ---------------- */
 // A diferencia de un valor fijo por clase, esta posición se calcula a partir del
-// último nodo de decisión del recorrido real del árbol: qué tan lejos está el
-// valor real de esta lectura respecto al umbral que definió esa rama, en
-// proporción al espacio disponible hasta el límite físico de esa variable.
-// Así, dos lecturas clasificadas como "medio" no se ven idénticas en el gauge
-// si una apenas cruzó el umbral y la otra está muy adentro de la rama — y el
-// resultado siempre queda dentro del tercio del gauge que corresponde a su clase.
+// nodo crítico del recorrido real del árbol (ver getCriticalNodeInfo). Así, dos
+// lecturas clasificadas como "medio" no se ven idénticas en el gauge si una
+// apenas cruzó el umbral y la otra está muy adentro de la rama — y el resultado
+// siempre queda dentro del tercio del gauge que corresponde a su clase.
 function computeGaugeScore(result){
   const zoneOrder = {low:0, medium:1, high:2};
   const idx = zoneOrder[result.predicted];
   const zoneMin = idx * (100/3);
   const zoneMax = (idx + 1) * (100/3);
-
-  const path = result.path;
-  let frac = 0.5;
-  if (path.length){
-    const last = path[path.length - 1];
-    const node = TREE.nodes[last.nodeId];
-    const threshold = node.threshold; // 0-1, ya normalizado
-    const normVal = normalize(last.feature, last.realVal);
-    const goneRight = last.direction === 'right';
-    const margin = goneRight ? (normVal - threshold) : (threshold - normVal);
-    const room = goneRight ? (1 - threshold) : threshold;
-    frac = room > 0 ? Math.max(0, Math.min(1, margin / room)) : 0.5;
-  }
+  const crit = getCriticalNodeInfo(result);
+  const frac = crit ? crit.frac : 0.5;
   const score = zoneMin + frac * (zoneMax - zoneMin);
   // margen de seguridad de 1 punto para que la aguja nunca quede pegada a la línea divisoria de zona
   return Math.max(zoneMin + 1, Math.min(zoneMax - 1, score));
@@ -1535,35 +1596,117 @@ function buildTrendChart(){
 }
 
 let lastConfidence = null;
-function buildConfidence(result){
-  const total = TREE.nodes[0].samples; // registros de entrenamiento en el nodo raíz del árbol vigente
-  const leafSamples = result.leafSamples;
-  const pct = total > 0 ? (leafSamples/total)*100 : 0;
-  const el = document.getElementById('conf-value');
-  const bar = document.getElementById('conf-bar');
-  const note = document.getElementById('conf-note');
-  const totalFmt = total.toLocaleString('es-CO');
-  el.textContent = pct.toFixed(1) + '%';
-  bar.style.width = Math.max(2, Math.min(100, pct*2)) + '%';
-  let color, msg, tier;
-  if (leafSamples >= 100){
-    tier = 'alta';
-    color = '#2ECC71';
-    msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — clasificación bien sustentada para apoyar una decisión.`;
-  } else if (leafSamples >= 10){
-    tier = 'moderada';
-    color = '#F5A623';
-    msg = `Respaldado por <b>${leafSamples}</b> de ${totalFmt} lecturas históricas similares — respaldo moderado, verificar con otra fuente antes de actuar.`;
-  } else {
-    tier = 'baja';
-    color = '#F0523E';
-    msg = `⚠︎ Solo <b>${leafSamples}</b> de ${totalFmt} lecturas históricas cayeron en este mismo nodo — caso poco frecuente en el entrenamiento. No tomar una decisión operativa basada únicamente en este resultado.`;
-  }
-  el.style.color = color;
-  bar.style.background = color;
-  note.innerHTML = msg;
-  lastConfidence = {pct, leafSamples, total, tier, color, msg};
+
+// Niveles de confianza: basados en "frac" (ver getCriticalNodeInfo), es decir,
+// qué tan lejos está la lectura del umbral que definió la hoja, como fracción
+// del rango disponible en esa rama. Estos cortes (15/40/65/85) son una
+// convención de interpretación —no un estimador estadístico calibrado— elegida
+// para que "muy alta" exija estar claramente adentro de la región de decisión
+// (top 15%) y "muy baja" marque estar prácticamente sobre el umbral (bottom 15%).
+const CONFIDENCE_TIERS = [
+  {min:85, key:'muyalta', label:'MUY ALTA', color:'#2ECC71'},
+  {min:65, key:'alta', label:'ALTA', color:'#6FCB6A'},
+  {min:40, key:'moderada', label:'MODERADA', color:'#F5A623'},
+  {min:15, key:'baja', label:'BAJA', color:'#F2884A'},
+  {min:0, key:'muybaja', label:'MUY BAJA', color:'#F0523E'},
+];
+function tierFor(pct){
+  return CONFIDENCE_TIERS.find(t => pct >= t.min) || CONFIDENCE_TIERS[CONFIDENCE_TIERS.length-1];
 }
+
+// Clase alternativa más cercana: qué habría predicho el árbol si, manteniendo
+// todos los demás valores reales de esta lectura, el nodo crítico hubiera
+// tomado la rama contraria. Es un resultado real (se recorre el árbol de
+// verdad desde el nodo hermano), no una suposición.
+function predictAlternateClass(result, crit){
+  if (!crit) return null;
+  const node = TREE.nodes[crit.nodeId];
+  const siblingId = crit.direction === 'left' ? node.right : node.left;
+  if (siblingId === undefined) return null;
+  const alt = traverseTree(currentValues, siblingId);
+  if (alt.predicted === result.predicted) return null; // la rama alterna reconverge a la misma clase
+  return alt.predicted;
+}
+
+function computeConfidence(result){
+  const crit = getCriticalNodeInfo(result);
+  const fracPct = crit ? Math.round(crit.frac * 100) : 50;
+  const leafSamples = result.leafSamples;
+  const rootSamples = TREE.nodes[0].samples;
+
+  // El respaldo histórico actúa como TOPE, no como promedio ponderado: una
+  // hoja con muy poco respaldo (pocas lecturas de entrenamiento) no puede
+  // presentarse como "muy alta confianza" aunque la lectura esté lejos del
+  // umbral, porque la generalización de esa regla es, en sí misma, poco fiable.
+  let displayPct = fracPct;
+  let cappedBy = null;
+  if (leafSamples < 3 && displayPct > 20){ displayPct = Math.min(displayPct, 20); cappedBy = 'muy poco respaldo histórico'; }
+  else if (leafSamples < 10 && displayPct > 39){ displayPct = Math.min(displayPct, 39); cappedBy = 'poco respaldo histórico'; }
+
+  const tier = tierFor(displayPct);
+  const altClass = predictAlternateClass(result, crit);
+
+  const interpretations = {
+    muyalta: 'La lectura se encuentra claramente dentro de la región de decisión de esta clase, lejos del umbral que la definió.',
+    alta: 'La lectura está bien adentro de la región de decisión, con un margen cómodo respecto al umbral.',
+    moderada: 'La lectura está dentro de la región correspondiente, pero a una distancia moderada del umbral — conviene seguir monitoreando.',
+    baja: 'La lectura está relativamente cerca del umbral de decisión. Una variación pequeña podría cambiar la clasificación.',
+    muybaja: 'La lectura está muy cerca del umbral de decisión, o respaldada por muy pocos casos históricos similares. El resultado debe interpretarse con precaución.',
+  };
+
+  let supportMsg;
+  const rootFmt = rootSamples.toLocaleString('es-CO');
+  if (leafSamples >= 100) supportMsg = `Respaldado por <b>${leafSamples}</b> de ${rootFmt} lecturas históricas similares.`;
+  else if (leafSamples >= 10) supportMsg = `Respaldado por <b>${leafSamples}</b> de ${rootFmt} lecturas históricas similares — respaldo moderado.`;
+  else supportMsg = `⚠︎ Solo <b>${leafSamples}</b> de ${rootFmt} lecturas históricas cayeron en este mismo nodo — caso poco frecuente en el entrenamiento.`;
+
+  return {
+    pct: displayPct, fracPct, tier: tier.key, tierLabel: tier.label, color: tier.color,
+    leafSamples, rootSamples, cappedBy, crit, altClass,
+    interpretation: interpretations[tier.key], supportMsg,
+    msg: interpretations[tier.key] + ' ' + supportMsg.replace(/<\/?b>/g,'')
+  };
+}
+
+function buildConfidence(result){
+  const conf = computeConfidence(result);
+  lastConfidence = conf;
+  const meta = CLASS_META[result.predicted];
+
+  document.getElementById('conf-pct').textContent = conf.pct + '%';
+  document.getElementById('conf-pct').style.color = conf.color;
+  document.getElementById('conf-tier').textContent = conf.tierLabel;
+  document.getElementById('conf-tier').style.color = conf.color;
+  document.getElementById('conf-class-label').textContent = meta.label.toUpperCase();
+  document.getElementById('conf-class-label').style.color = meta.colorHex;
+  document.getElementById('conf-scale-marker').style.left = conf.pct + '%';
+
+  let interpretHtml = conf.interpretation;
+  if (conf.cappedBy) interpretHtml += ` <span style="color:${conf.color};">(nivel limitado por ${conf.cappedBy})</span>`;
+  document.getElementById('conf-interpret').innerHTML = interpretHtml;
+  document.getElementById('conf-support-note').innerHTML = conf.supportMsg;
+
+  // ¿Por qué esta confianza? — cadena real: variable crítica → umbral → margen → respaldo → clase alternativa
+  const crit = conf.crit;
+  let why = '';
+  if (crit){
+    const critInfo = LABELS[crit.feature] || {name: crit.feature, unit:''};
+    const dirWord = crit.direction === 'right' ? 'superó' : 'no superó';
+    why += `<p><b class="node-feat">Variable crítica</b><br>${critInfo.name} = ${fmt(crit.realVal, crit.feature)}</p>`;
+    why += `<p><b class="node-feat">Umbral del nodo que decidió el resultado</b><br>${fmt(crit.thresholdReal, crit.feature)}</p>`;
+    why += `<p><b class="node-feat">Distancia al umbral</b><br>${fmt(crit.marginReal, crit.feature)} (la lectura ${dirWord} este umbral)</p>`;
+    why += `<p><b class="node-feat">Posición dentro del rango de esa rama</b><br>${conf.fracPct}% del espacio disponible entre el umbral y el límite físico de la variable</p>`;
+  }
+  why += `<p><b class="node-feat">Respaldo histórico</b><br>${conf.supportMsg}</p>`;
+  if (conf.altClass){
+    const altMeta = CLASS_META[conf.altClass];
+    why += `<p><b class="node-feat">Clase alternativa más cercana</b><br>Si el nodo crítico hubiera tomado la rama contraria (con el resto de variables iguales), el árbol habría clasificado esta lectura como <b style="color:${altMeta.colorHex}">${altMeta.label.toUpperCase()}</b>.</p>`;
+  } else {
+    why += `<p><b class="node-feat">Clase alternativa más cercana</b><br>No aplica: incluso tomando la rama contraria en el nodo crítico, el árbol vuelve a converger en la misma clase.</p>`;
+  }
+  document.getElementById('conf-why-body').innerHTML = why;
+}
+
 
 /* ---------------- MAIN RECOMPUTE ---------------- */
 function recompute(opts){
@@ -1821,7 +1964,7 @@ function generateCurrentReportText(){
   lines.push('');
   const conf = lastConfidence;
   if(conf){
-    lines.push(`Confiabilidad de la clasificación: ${conf.pct.toFixed(1)}% (${conf.tier.toUpperCase()}) — ${conf.msg.replace(/<\/?b>/g,'')}`);
+    lines.push(`Confiabilidad de la clasificación: ${conf.pct}% (${conf.tierLabel}) — ${conf.msg.replace(/<\/?b>/g,'')}`);
     lines.push('');
   }
   lines.push('Diagnóstico del árbol de decisión: ' + buildDiagnosis(r.predicted, r.path).replace(/<\/?b>/g,''));
@@ -1962,7 +2105,7 @@ document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
   const body = `
     <h4>Resultado y nivel de riesgo</h4>
     <p>Clasificación: <b style="color:${meta.colorHex}">${meta.label}</b> · Nivel de riesgo: <b style="color:${meta.colorHex}">${meta.riesgo}</b></p>
-    <p>Confiabilidad de la clasificación: <b style="color:${lastConfidence.color}">${lastConfidence.pct.toFixed(1)}% (${lastConfidence.tier.toUpperCase()})</b> — ${lastConfidence.msg}</p>
+    <p>Confiabilidad de la clasificación: <b style="color:${lastConfidence.color}">${lastConfidence.pct}% (${lastConfidence.tierLabel})</b> — ${lastConfidence.msg}</p>
     <h4>Diagnóstico ampliado</h4>
     <p>${buildDiagnosis(r.predicted, r.path)}</p>
     <h4>Reglas que aplicó el árbol de decisión, paso a paso</h4>
