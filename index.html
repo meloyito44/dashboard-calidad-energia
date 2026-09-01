@@ -264,6 +264,7 @@
 
   /* ---- encabezados de zona (arquitectura de informacion) ---- */
   .zone-label{ display:flex; align-items:center; gap:10px; margin:22px 0 10px 0; }
+  .view-title{ display:none; font-size:20px; font-weight:700; color:var(--ink); margin:2px 0 18px 0; padding-bottom:12px; border-bottom:1px solid var(--line); }
   .zone-label .zn{ width:22px; height:22px; border-radius:7px; background:var(--panel-2); border:1px solid var(--line);
     display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--accent); flex-shrink:0; }
   .zone-label .zt{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-dim); }
@@ -310,9 +311,11 @@
 
 <div class="wrap">
 
-  <div class="zone-label" id="resumen"><span class="zn">1</span><span class="zt">Cabecera de estado</span></div>
+  <div class="view-title" id="view-title"></div>
 
-  <div class="statusbar">
+  <div class="zone-label" id="resumen" data-block="zone-label"><span class="zn">1</span><span class="zt">Cabecera de estado</span></div>
+
+  <div class="statusbar" data-block="header">
     <div class="semaforo" id="semaforo-dot"></div>
     <div>
       <div class="status-text" id="status-text">—</div>
@@ -330,7 +333,7 @@
   </div>
 
   <!-- CARGA DE HISTORICO -->
-  <div class="upload-card" id="upload-card">
+  <div class="upload-card" id="upload-card" data-block="header">
     <div>
       <h3>📁 Cargar histórico y reentrenar el árbol (Excel/CSV)</h3>
       <details class="secondary">
@@ -347,7 +350,7 @@
   </div>
 
   <!-- KPI STRIP -->
-  <div class="kpi-strip">
+  <div class="kpi-strip" data-block="indices">
     <div class="kpi-card">
       <div class="kpi-label">Corriente promedio</div>
       <div class="kpi-value" id="kpi-current">—</div>
@@ -380,7 +383,7 @@
   </div>
 
   <!-- ROW 1: parametros electricos + indices de calidad reales -->
-  <div class="grid" id="indices">
+  <div class="grid" id="indices" data-block="indices">
     <div class="card c4">
       <h3>Desequilibrio de voltaje</h3>
       <div class="idx-value" id="idx-vunb">—</div>
@@ -401,10 +404,10 @@
     </div>
   </div>
 
-  <div class="zone-label" id="explicacion"><span class="zn">2</span><span class="zt">Explicación del modelo</span></div>
+  <div class="zone-label" id="explicacion" data-block="zone-label"><span class="zn">2</span><span class="zt">Explicación del modelo</span></div>
 
   <!-- ROW 1b: resumen + gauge | diagnostico | panorama rapido -->
-  <div class="grid">
+  <div class="grid" data-block="explicacion">
     <div class="card c3">
       <h3>Resumen general</h3>
       <div class="indicador" id="indicador">—</div>
@@ -436,7 +439,7 @@
   </div>
 
   <!-- ROW 1.5: path visualization (signature element) -->
-  <div class="grid" id="arbol">
+  <div class="grid" id="arbol" data-block="explicacion">
     <div class="card c12">
       <h3>Recorrido del árbol de decisión — paso a paso hasta la conclusión</h3>
       <div class="path-viz" id="path-viz"></div>
@@ -444,7 +447,7 @@
   </div>
 
   <!-- ROW 1.6: tendencia real de la sesión + confiabilidad del resultado (soporte a decisión) -->
-  <div class="grid" id="tendencia-sesion">
+  <div class="grid" id="tendencia-sesion" data-block="explicacion">
     <div class="card c8">
       <h3>Tendencia de la sesión — variables clave</h3>
       <div id="trend-chart"></div>
@@ -489,10 +492,10 @@
     </div>
   </div>
 
-  <div class="zone-label" id="variables"><span class="zn">3</span><span class="zt">Controles de entrada — simula un escenario</span></div>
+  <div class="zone-label" id="variables" data-block="zone-label"><span class="zn">3</span><span class="zt">Controles de entrada — simula un escenario</span></div>
 
   <!-- ROW 2: sliders | variables criticas | recomendaciones -->
-  <div class="grid">
+  <div class="grid" data-block="variables">
     <div class="card c4">
       <h3>Lectura del medidor — variables principales</h3>
       <div id="slider-primary"></div>
@@ -517,10 +520,10 @@
     </div>
   </div>
 
-  <div class="zone-label" id="acciones"><span class="zn">4</span><span class="zt">Acciones sugeridas</span></div>
+  <div class="zone-label" id="acciones" data-block="zone-label"><span class="zn">4</span><span class="zt">Acciones sugeridas</span></div>
 
   <!-- ROW 3: acciones -->
-  <div class="grid">
+  <div class="grid" data-block="acciones">
     <div class="card c12">
       <div class="action-groups">
         <div>
@@ -550,10 +553,10 @@
     </div>
   </div>
 
-  <div class="zone-label" id="historial"><span class="zn">5</span><span class="zt">Histórico y distribución de la sesión</span></div>
+  <div class="zone-label" id="historial" data-block="zone-label"><span class="zn">5</span><span class="zt">Histórico y distribución de la sesión</span></div>
 
   <!-- ROW 4: historial -->
-  <div class="grid">
+  <div class="grid" data-block="historial">
     <div class="card c8">
       <h3>Historial / Tendencia (lecturas registradas en esta sesión)</h3>
       <div class="hist-wrap" id="hist-wrap"></div>
@@ -2453,10 +2456,63 @@ document.getElementById('file-historico').addEventListener('change', (e)=>{
   handleHistoricalFile(file);
 });
 
+/* ---------------- NAVEGACIÓN DEL PANEL (vistas por sección) ---------------- */
+const VIEW_TITLES = {
+  indices: 'Índices de calidad',
+  explicacion: 'Explicación del modelo',
+  variables: 'Variables del medidor',
+  acciones: 'Acciones sugeridas',
+  historial: 'Historial de sesión'
+};
+const VALID_VIEWS = ['resumen', 'indices', 'explicacion', 'variables', 'acciones', 'historial'];
+
+function setView(view){
+  if(!VALID_VIEWS.includes(view)) view = 'resumen';
+  const isResumen = (view === 'resumen');
+
+  document.querySelectorAll('[data-block]').forEach(el=>{
+    const key = el.getAttribute('data-block');
+    if(key === 'zone-label'){
+      el.style.display = isResumen ? '' : 'none';
+      return;
+    }
+    el.style.display = (isResumen || key === view) ? '' : 'none';
+  });
+
+  const titleEl = document.getElementById('view-title');
+  if(isResumen){
+    titleEl.style.display = 'none';
+    titleEl.textContent = '';
+  } else {
+    titleEl.style.display = 'block';
+    titleEl.textContent = VIEW_TITLES[view] || '';
+  }
+
+  document.querySelectorAll('.navlink').forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href') === '#' + view);
+  });
+
+  window.scrollTo({top:0, behavior:'auto'});
+}
+
+document.querySelectorAll('.navlink').forEach(a=>{
+  a.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const view = a.getAttribute('href').substring(1);
+    window.history.replaceState(null, '', '#' + view);
+    setView(view);
+  });
+});
+
+window.addEventListener('hashchange', ()=>{
+  setView(location.hash ? location.hash.substring(1) : 'resumen');
+});
+
 /* ---------------- INIT ---------------- */
 TREE.feature_order.forEach(feat=>{ currentValues[feat] = TREE.feature_stats[feat].mean; });
 buildSliders();
 loadPreset('high');
+setView(location.hash ? location.hash.substring(1) : 'resumen');
 </script>
 
 </body>
