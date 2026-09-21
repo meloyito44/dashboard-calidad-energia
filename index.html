@@ -6,6 +6,7 @@
 <title>Panel Inteligente — Calidad de Energía</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap');
 
   :root{
     --bg:#0B1220;
@@ -40,11 +41,17 @@
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
     padding:18px 14px; display:flex; flex-direction:column; gap:2px;
   }
-  .brand{ display:flex; align-items:center; gap:9px; padding:2px 6px 16px 6px; border-bottom:1px solid var(--line); margin-bottom:12px; }
+  .brand{ position:relative; overflow:hidden; display:flex; align-items:center; gap:9px; padding:2px 6px 16px 6px; border-bottom:1px solid var(--line); margin-bottom:12px; }
+  /* Marca de agua "Melo" — solo en la sección del logo */
+  .brand::after{ content:'Melo'; position:absolute; right:2px; bottom:4px; font-family:'Kaushan Script', 'Brush Script MT', cursive;
+    font-size:38px; line-height:1; color:var(--ink); opacity:.08; transform:rotate(-6deg); transform-origin:right bottom;
+    pointer-events:none; user-select:none; z-index:0; }
+  .brand .bolt, .brand .name{ position:relative; z-index:1; }
   .brand .bolt{ width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg, var(--accent), #6C5CE7);
     display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
   .brand .name{ font-size:12.5px; font-weight:700; line-height:1.25; }
   .brand .name span{ display:block; font-size:9.5px; font-weight:600; color:var(--ink-dim); letter-spacing:.08em; }
+  .brand .name span.credit{ margin-top:3px; font-size:8.5px; font-weight:500; letter-spacing:.03em; opacity:.75; }
   .navlink{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:var(--ink-dim);
     text-decoration:none; font-size:12.5px; font-weight:600; transition:all .15s ease; }
   .navlink .ico{ font-size:13px; width:16px; text-align:center; }
@@ -294,7 +301,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="bolt">⚡</div>
-      <div class="name">POWER QUALITY AI<span>Panel de clasificación</span></div>
+      <div class="name">POWER QUALITY AI<span>Panel de clasificación</span><span class="credit">Creado por Santiago Melo Quimbay</span></div>
     </div>
     <a class="navlink active" href="#resumen"><span class="ico">🏠</span>Resumen general</a>
     <a class="navlink" href="#indices"><span class="ico">📐</span>Índices de calidad</a>
