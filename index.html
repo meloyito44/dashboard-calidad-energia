@@ -292,6 +292,104 @@
   .stat-dot-amber{ background:var(--amber); }
   .stat-dot-green{ background:var(--green); }
   .stat-dot-gray{ background:var(--ink-dim); }
+  /* ---- eventos de calidad de energia (6 categorias clasicas) ---- */
+  .pe-header{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;
+    padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  .pe-sub{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .pe-summary{ display:flex; gap:6px; flex-wrap:wrap; }
+  .pe-chip{ font-size:11px; font-weight:600; padding:3px 10px; border-radius:100px; color:var(--ink-dim);
+    border:1px solid var(--line); background:var(--panel-2); white-space:nowrap; }
+  .pe-chip.none{ color:var(--green); border-color:rgba(46,204,113,.3); background:rgba(46,204,113,.10); }
+  .pe-chip.detected{ color:var(--red); border-color:rgba(240,82,62,.4); background:rgba(240,82,62,.12); }
+  .pe-list{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+  .pe-list.single{ grid-template-columns:1fr; }
+  .pe-item{ background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .pe-item-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }
+  .pe-name{ font-size:13px; font-weight:700; color:var(--ink); }
+  .pe-badge{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px;
+    border-radius:5px; white-space:nowrap; border:1px solid transparent; flex-shrink:0; }
+  .pe-badge.none{ color:var(--green); background:rgba(46,204,113,.14); border-color:rgba(46,204,113,.3); }
+  .pe-badge.na{ color:var(--ink-dim); background:rgba(155,168,194,.12); border-color:rgba(155,168,194,.22); }
+  .pe-badge.detected{ color:var(--red); background:rgba(240,82,62,.14); border-color:rgba(240,82,62,.4); }
+  .pe-item.detected{ border-color:rgba(240,82,62,.45); }
+  .pe-text{ font-size:12px; line-height:1.55; color:#C6CEDE; }
+  .pe-item{ transition:border-color .3s ease; }
+  .pe-head-right{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .pe-change{ font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; }
+  .pe-change[hidden]{ display:none; }
+  .pe-change.new{ color:var(--red); background:rgba(240,82,62,.14); }
+  .pe-change.solved{ color:var(--green); background:rgba(46,204,113,.14); }
+  .pe-meter{ margin-top:10px; }
+  .pe-meter[hidden]{ display:none; }
+  .pe-meter-track{ height:6px; border-radius:4px; background:#1B2338; overflow:hidden; }
+  .pe-meter-fill{ height:100%; border-radius:4px; transition:width .4s ease, background .3s ease; }
+  .pe-meter-fill.ok{ background:var(--green); }
+  .pe-meter-fill.warn{ background:var(--amber); }
+  .pe-meter-fill.bad{ background:var(--red); }
+  .pe-meter-label{ font-size:10.5px; color:var(--ink-dim); margin-top:5px; font-family:'IBM Plex Mono', monospace; }
+  @keyframes pe-flash{ from{ box-shadow:0 0 0 3px rgba(55,182,232,.55); } to{ box-shadow:0 0 0 0 rgba(55,182,232,0); } }
+  .pe-item.pe-flash{ animation:pe-flash 1.2s ease-out; }
+  .pe-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:12px;
+    padding-top:10px; border-top:1px solid var(--line); font-size:11.5px; color:var(--ink-dim); line-height:1.5; }
+  .pe-open{ all:unset; cursor:pointer; font-size:11.5px; font-weight:600; color:var(--accent); padding:5px 11px;
+    border:1px solid var(--line); border-radius:7px; background:var(--panel-2); white-space:nowrap; }
+  .pe-open:hover{ border-color:var(--accent); }
+  .pe-open:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .pe-open[hidden]{ display:none; }
+  .pe-ind-wrap{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .pe-ind-head{ display:flex; flex-direction:column; gap:3px; margin-bottom:10px; }
+  .pe-ind-title{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink); }
+  .pe-ind-sub{ font-size:11.5px; color:var(--ink-dim); line-height:1.5; }
+  .pe-ind-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
+  .pe-ind-grid.single{ grid-template-columns:1fr; }
+  .pe-ind-card{ background:var(--panel-2); border:1px dashed rgba(155,168,194,.35); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:7px; }
+  .pe-ind-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .pe-ind-name{ font-size:12.5px; font-weight:700; color:var(--ink); line-height:1.35; }
+  .pe-ind-val{ font-family:'IBM Plex Mono', monospace; font-size:20px; font-weight:600; color:var(--ink); line-height:1.1; }
+  .pe-ind-val small{ font-size:11.5px; font-weight:500; color:var(--ink-dim); margin-left:6px; }
+  .pe-ind-text{ font-size:11.5px; line-height:1.55; color:#C6CEDE; }
+  .pe-ind-note{ font-size:10.5px; line-height:1.5; color:var(--ink-dim); }
+  .pe-ind-card .pe-read .pe-read-tag{ color:var(--ink-dim); font-weight:600; }
+  .pe-ind-card .pe-reads{ margin-top:0; }
+  .pe-ind-part{ display:flex; flex-direction:column; gap:7px; padding-top:10px; border-top:1px solid var(--line); }
+  .pe-ind-part:first-of-type{ margin-top:2px; }
+  .pe-mono{ font-family:'IBM Plex Mono', monospace; font-size:.95em; color:var(--ink); }
+  .pe-ind-card .pe-read{ min-width:0; flex:1 1 92px; }
+  .pe-badge.ref{ color:var(--accent); background:rgba(55,182,232,.12); border-color:rgba(55,182,232,.3); }
+  .pe-badge.nest{ color:var(--amber); background:rgba(245,166,35,.12); border-color:rgba(245,166,35,.3); }
+  .pe-badge.direct{ color:var(--green); background:rgba(46,204,113,.14); border-color:rgba(46,204,113,.3); }
+  .pe-spark{ display:block; width:100%; height:28px; }
+  .pe-method{ font-size:12px; line-height:1.6; color:#C6CEDE; }
+  .pe-method code{ display:block; margin:4px 0 6px; padding:6px 9px; border-radius:6px; background:#151C2E; border:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink); white-space:normal; }
+  @media (max-width: 980px){ .pe-ind-grid{ grid-template-columns:1fr; } }
+  .pe-reads{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .pe-reads:empty{ display:none; }
+  .pe-read{ display:flex; flex-direction:column; gap:1px; min-width:104px; padding:6px 9px; border-radius:7px;
+    background:#151C2E; border:1px solid var(--line); transition:border-color .3s ease, background .3s ease; }
+  .pe-read-top{ font-size:10px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .pe-read-val{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink); font-weight:600; }
+  .pe-read-val small{ font-weight:500; color:var(--ink-dim); font-size:11px; margin-left:4px; }
+  .pe-read-tag{ font-size:10.5px; font-weight:700; color:var(--green); }
+  .pe-read.over{ border-color:rgba(240,82,62,.55); background:rgba(240,82,62,.10); } .pe-read.over .pe-read-tag{ color:var(--red); }
+  .pe-read.collapse, .pe-read.bad{ border-color:rgba(240,82,62,.55); background:rgba(240,82,62,.10); }
+  .pe-read.collapse .pe-read-tag, .pe-read.bad .pe-read-tag{ color:var(--red); }
+  .pe-read.under{ border-color:rgba(245,166,35,.55); background:rgba(245,166,35,.10); } .pe-read.under .pe-read-tag{ color:var(--amber); }
+  .pe-read.na .pe-read-tag{ color:var(--ink-dim); }
+  .hist-bar.has-event{ border-top:3px solid #F0523E; }
+  .pe-trend{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .pe-trend[hidden]{ display:none; }
+  .pe-trend-strip{ display:flex; gap:2px; flex:1; height:8px; }
+  .pe-trend-cell{ flex:1; min-width:2px; border-radius:2px; background:#232C44; }
+  .pe-trend-cell.none{ background:rgba(46,204,113,.55); }
+  .pe-trend-cell.detected{ background:var(--red); }
+  .pe-trend-cell.na{ background:#3A4560; }
+  .pe-trend-cell.last{ outline:1px solid var(--ink-dim); outline-offset:1px; }
+  .pe-trend-label{ font-size:10px; color:var(--ink-dim); white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
+  .slider-tag{ font-size:9.5px; font-weight:600; color:var(--ink-dim); border:1px solid var(--line); border-radius:4px;
+    padding:1px 6px; margin-left:8px; white-space:nowrap; }
+  @media (max-width: 980px){ .pe-list{ grid-template-columns:1fr; } }
+  @media (prefers-reduced-motion: reduce){ .pe-item.pe-flash{ animation:none; } .pe-meter-fill{ transition:none; } }
 </style>
 </head>
 <body>
@@ -367,7 +465,7 @@
     <div class="kpi-card">
       <div class="kpi-label">Voltaje promedio</div>
       <div class="kpi-value" id="kpi-voltage">—</div>
-      <div class="kpi-sub">Fase-neutro</div>
+      <div class="kpi-sub" id="kpi-voltage-sub">Fase-neutro</div>
       <div class="kpi-spark" id="spark-voltage"></div>
     </div>
     <div class="kpi-card">
@@ -379,7 +477,7 @@
     <div class="kpi-card">
       <div class="kpi-label">Factor de potencia</div>
       <div class="kpi-value" id="kpi-cosphi">—</div>
-      <div class="kpi-sub">Cos φ total</div>
+      <div class="kpi-sub" id="kpi-cosphi-sub">Cos φ total</div>
       <div class="kpi-spark" id="spark-cosphi"></div>
     </div>
     <div class="kpi-card">
@@ -525,6 +623,28 @@
       <h3>Recomendaciones</h3>
       <ul class="rec-list" id="rec-list"></ul>
     </div>
+
+    <div class="card c12" id="power-events">
+      <div class="pe-header">
+        <div>
+          <h3 style="margin-bottom:6px;">Eventos de calidad de energía</h3>
+          <div class="pe-sub">Las 6 categorías clásicas, evaluadas solo con las variables que el dataset entrenado realmente contiene.</div>
+        </div>
+        <div class="pe-summary" id="pe-summary"></div>
+      </div>
+      <div class="pe-list" id="pe-list"></div>
+      <div class="pe-ind-wrap" id="pe-ind-wrap">
+        <div class="pe-ind-head">
+          <span class="pe-ind-title">Indicadores indirectos</span>
+          <span class="pe-ind-sub">Cubren lo que el dataset no mide directamente. Se calculan con las variables disponibles: no son mediciones normalizadas y no cuentan como evidencia de evento.</span>
+        </div>
+        <div id="pe-ind"></div>
+      </div>
+      <div class="pe-foot">
+        <span>Los eventos se recalculan con cada movimiento de los controles.<span id="pe-foot-volt"> Los voltajes por fase están en «Variables secundarias (ajuste fino)».</span></span>
+        <button type="button" class="pe-open" id="pe-open-controls">Ir a los voltajes</button>
+      </div>
+    </div>
   </div>
 
   <div class="zone-label" id="acciones" data-block="zone-label"><span class="zn">4</span><span class="zt">Acciones sugeridas</span></div>
@@ -546,6 +666,7 @@
           <div class="action-group-buttons">
             <button class="action-btn" id="btn-riesgo"><span class="ico">🚨</span>Análisis de riesgo</button>
             <button class="action-btn" id="btn-calidad"><span class="ico">📐</span>Diagnóstico de calidad de energía</button>
+            <button class="action-btn" id="btn-eventos"><span class="ico">⚡</span>Eventos de calidad de energía</button>
           </div>
         </div>
         <div>
@@ -573,7 +694,7 @@
         <span><span class="legend-dot" style="background:var(--amber)"></span>Medio</span>
         <span><span class="legend-dot" style="background:var(--red)"></span>Alto</span>
       </div>
-      <div class="footnote" id="hist-footnote">Cada vez que mueves un control, el sistema recorre el árbol de decisión entrenado (con la profundidad y cantidad de resultados posibles que se muestran arriba) y agrega el resultado a este historial.</div>
+      <div class="footnote" id="hist-footnote">El sistema recorre el árbol de decisión entrenado con cada lectura, pero solo registra una aquí cuando cambia la clasificación o el estado de algún evento de calidad de energía.</div>
     </div>
     <div class="card c4">
       <h3>Distribución de la sesión</h3>
@@ -674,6 +795,7 @@ const LABELS = {
   'Reactive Power Total Avg': {name:'Potencia Reactiva Total', unit:'VAR'},
 };
 
+const CLASS_SHORT = {low:'Bajo', medium:'Medio', high:'Alto'};   // nombres cortos para leyendas (no cortar la primera palabra de la etiqueta larga)
 const CLASS_META = {
   low:    {colorHex:'#2ECC71', label:'Bajo consumo', riesgo:'Riesgo bajo',
            statusText:'Calidad de energía: NORMAL', statusSub:'Consumo dentro de los rangos habituales'},
@@ -685,6 +807,8 @@ const CLASS_META = {
 
 let currentValues = {};
 let history = [];       // array of {cls, ts, path, values}
+let historyFromFile = false; // true cuando el historial parte de las filas de un archivo cargado
+let historyFluct = null; // índice de fluctuación calculado sobre TODOS los registros consecutivos del archivo subido
 let valueHistory = [];  // array of {ts, cls, raw:{current,voltage,power,cosphi}} — tendencia de sesión, se registra en cada recompute
 let lastClass = null;
 let lastResult = null;
@@ -726,7 +850,8 @@ function cssId(feat){ return feat.replace(/[^a-zA-Z0-9]/g,''); }
 
 function buildSliders(){
   const primaryFeats = TREE.used_features.filter(f => LABELS[f] && LABELS[f].primary);
-  const secondaryFeats = TREE.used_features.filter(f => LABELS[f] && !LABELS[f].primary);
+  const eventOnlyFeats = peExtraFeats().filter(f => LABELS[f]);
+  const secondaryFeats = TREE.used_features.filter(f => LABELS[f] && !LABELS[f].primary).concat(eventOnlyFeats);
   const primaryHost = document.getElementById('slider-primary');
   const secondaryHost = document.getElementById('slider-secondary');
   primaryHost.innerHTML = ''; secondaryHost.innerHTML = '';
@@ -751,16 +876,20 @@ function buildSliders(){
     const info = LABELS[feat];
     const row = document.createElement('div');
     row.className = 'slider-row';
-    const step = (stats.max - stats.min) / 500;
+    // Los voltajes extienden su tope hasta +25% del promedio histórico: con el máximo observado del dataset
+    // (≈ +4%) nunca se podría simular una sobretensión (umbral: +10%) desde el panel.
+    const isVolt = PE_VOLT_FEATS.includes(feat);
+    const sMax = isVolt ? Math.max(stats.max, stats.mean * 1.25) : stats.max;
+    const step = (sMax - stats.min) / 500;
     const warnHtml = isPowerFactorFeat(feat) ? `<div class="slider-warn" id="warn-${cssId(feat)}"></div>` : '';
     row.innerHTML = `
       <div class="slider-head">
-        <span class="slider-name">${info.name}</span>
+        <span class="slider-name">${info.name}${eventOnlyFeats.includes(feat) ? '<span class="slider-tag" title="No interviene en la clasificación del árbol: solo alimenta los eventos de calidad de energía">Solo eventos</span>' : ''}</span>
         <span class="slider-value mono" id="val-${cssId(feat)}"></span>
       </div>
-      <input type="range" id="slider-${cssId(feat)}" min="${stats.min}" max="${stats.max}" step="${step}" value="${currentValues[feat]}"
-        aria-label="${info.name}" aria-valuemin="${stats.min}" aria-valuemax="${stats.max}" aria-valuenow="${currentValues[feat]}" aria-valuetext="${fmt(currentValues[feat], feat)}">
-      <div class="slider-range"><span>${fmt(stats.min, feat)}</span><span>${fmt(stats.max, feat)}</span></div>
+      <input type="range" id="slider-${cssId(feat)}" min="${stats.min}" max="${sMax}" step="${step}" value="${currentValues[feat]}"
+        aria-label="${info.name}" aria-valuemin="${stats.min}" aria-valuemax="${sMax}" aria-valuenow="${currentValues[feat]}" aria-valuetext="${fmt(currentValues[feat], feat)}">
+      <div class="slider-range"><span>${fmt(stats.min, feat)}</span><span${isVolt ? ' title="Rango ampliado hasta +25% del promedio histórico para poder simular sobretensiones"' : ''}>${fmt(sMax, feat)}</span></div>
       ${warnHtml}
     `;
     host.appendChild(row);
@@ -774,6 +903,7 @@ function buildSliders(){
       input.setAttribute('aria-valuenow', currentValues[feat]);
       input.setAttribute('aria-valuetext', valText);
       if (isPowerFactorFeat(feat)) updateSliderWarning(feat);
+      renderPowerEvents();   // eventos en vivo: sin esperar al retardo de recompute()
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(recompute, 60);
     });
@@ -783,7 +913,7 @@ function buildSliders(){
 }
 
 function refreshSliderDisplays(){
-  TREE.used_features.forEach(feat=>{
+  TREE.used_features.concat(peExtraFeats()).forEach(feat=>{
     if(!LABELS[feat]) return;
     const input = document.getElementById('slider-' + cssId(feat));
     const val = document.getElementById('val-' + cssId(feat));
@@ -950,7 +1080,7 @@ function buildDonut(){
   });
   svg.innerHTML = paths || `<circle cx="${cx}" cy="${cy}" r="${r}" stroke="#1B2338" stroke-width="${sw}" fill="none"/>`;
   const legend = document.getElementById('donut-legend');
-  legend.innerHTML = order.map(cls => `<div><span class="legend-dot" style="background:${CLASS_META[cls].colorHex}"></span>${CLASS_META[cls].label.split(' ')[0]}: ${counts[cls]}</div>`).join('');
+  legend.innerHTML = order.map(cls => `<div><span class="legend-dot" style="background:${CLASS_META[cls].colorHex}"></span>${CLASS_SHORT[cls]}: ${counts[cls]}</div>`).join('');
 }
 
 /* ---------------- EXPLANATION / RECOMMENDATIONS ---------------- */
@@ -967,7 +1097,7 @@ function determinantFeatures(path){
   return seen;
 }
 
-function buildRecommendations(cls, path){
+function buildConsumptionRecommendations(cls, path){
   if(cls === 'low'){
     return [
       {icon:'✅', text:'No se requiere ninguna acción — todas las variables evaluadas están dentro de lo normal.'},
@@ -984,6 +1114,16 @@ function buildRecommendations(cls, path){
   if(cls === 'medium'){ recs.push({icon:'👁️', text:'Mantener monitoreo activo: la condición no exige una intervención inmediata, pero conviene seguir su evolución.'}); }
   else if(cls === 'high'){ recs.push({icon:'🛠️', text:'Programar una inspección técnica si esta condición se repite en próximas lecturas.'}); }
   return recs.length ? recs : [{icon:'👁️', text:'Mantener monitoreo activo.'}];
+}
+// Recomendaciones de la lectura actual = eventos de calidad detectados (prioridad) + las del consumo.
+function buildRecommendations(cls, path){
+  const events = evaluatePowerEvents(currentValues);
+  const detected = events.filter(e => e.status === 'detected');
+  let base = buildConsumptionRecommendations(cls, path);
+  if(!detected.length) return base;
+  base = base.filter(r => r.icon !== '✅');                              // "no se requiere ninguna acción" contradice un evento detectado
+  if(detected.some(e => e.key === 'fp')) base = base.filter(r => r.icon !== '🎯'); // evita repetir la recomendación de factor de potencia
+  return peRecommendations(events).concat(base);
 }
 
 function buildDiagnosis(cls, path){
@@ -1155,6 +1295,17 @@ function buildPowerQualityDiagnosis(){
     details.push({icon:'⚪', text:'Factor de potencia: no evaluable — el archivo cargado no incluye esta columna.'});
   }
 
+  // Eventos de tensión/frecuencia/armónicos/flicker: el desequilibrio entre fases no detecta una sobretensión que
+  // afecte a las tres fases por igual, así que estos eventos cuentan como un criterio más del veredicto.
+  // (El factor de potencia ya está cubierto por su propio índice.)
+  const evAll = evaluatePowerEvents(currentValues).filter(e => e.status !== 'na' && e.key !== 'fp');
+  if(evAll.length){
+    nEvaluated++;
+    const evBad = evAll.filter(e => e.status === 'detected');
+    if(evBad.length){ nBad++; details.push({icon:'🔴', text:`Eventos de calidad de energía: <b>${evBad.map(peShort).join(', ')}</b> — ${evBad.length} de ${evAll.length} categorías evaluables con evidencia (ver tarjeta de eventos).`}); }
+    else { nGood++; details.push({icon:'🟢', text:`Eventos de calidad de energía: sin evidencia en ${evAll.length === 1 ? 'la categoría evaluable' : 'las ' + evAll.length + ' categorías evaluables'} (nivel de tensión, interrupciones y demás).`}); }
+  }
+
   let verdict, verdictColor, verdictText;
   if(nEvaluated === 0){
     verdict = 'SIN DATOS SUFICIENTES';
@@ -1175,6 +1326,791 @@ function buildPowerQualityDiagnosis(){
   }
 
   return {verdict, verdictColor, verdictText, details, nEvaluated, nGood, nWarn, nBad};
+}
+
+/* ---------------- INDICADORES INDIRECTOS (variables que el dataset no mide directamente) ---------------- */
+// No se presentan como mediciones: cada indicador dice qué es, qué no es y por qué.
+//  - Frecuencia: solo se muestra el valor nominal de referencia (no hay fórmula válida con estos registros).
+//  - THD de corriente: solo se calcula si el dataset trae, por fase, el factor de desplazamiento y el factor de potencia
+//    verdadero (o P y S); si no, se declara no estimable y se explica qué falta según las columnas realmente presentes.
+//  - Fluctuación de tensión (%): variación entre registros consecutivos; NO es severidad de flicker (Pst/Plt).
+const PE_NOMINAL_HZ = 60;
+const PE_FLUCT_FORMULA = 'ΔV(%) = 100 · |V(t) − V(t−1)| / V_ref';
+const PE_THD_FORMULA = 'THD_I(%) = 100 · √( (FP_desplazamiento / (P/S))² − 1 )';
+
+// Variación de tensión entre registros consecutivos, por fase, sobre una serie de lecturas ordenadas.
+// V_ref = promedio histórico de cada fase (el mismo de los eventos de sobretensión). Los pares con una tensión
+// colapsada (< 10% del promedio) se excluyen: eso es una interrupción, no una fluctuación.
+function peFluctCompute(series){
+  const stats = TREE.feature_stats || {};
+  const feats = PE_VOLT_FEATS.filter(f => stats[f] && stats[f].mean > 0);
+  if(!feats.length) return {available:false, readings: series.length};
+  if(series.length < 2) return {available:true, waiting:true, readings: series.length};
+  const per = feats.map(f => ({f, label: 'Fase ' + 'ABC'[PE_VOLT_FEATS.indexOf(f)], ref: stats[f].mean, last: null, max: 0, sumSq: 0, n: 0}));
+  const spark = [];
+  let excluded = 0, totalSq = 0, totalN = 0, gmax = 0;
+  for(let i = 1; i < series.length; i++){
+    const a = series[i - 1], b = series[i], isLast = i === series.length - 1;
+    let pairMax = null;
+    per.forEach(p => {
+      const va = a[p.f], vb = b[p.f];
+      if(!(typeof va === 'number' && typeof vb === 'number' && isFinite(va) && isFinite(vb))) return;
+      if(va < p.ref * 0.10 || vb < p.ref * 0.10){ excluded++; return; }
+      const d = 100 * Math.abs(vb - va) / p.ref;
+      p.n++; p.sumSq += d * d; if(d > p.max) p.max = d; if(isLast) p.last = d;
+      totalSq += d * d; totalN++; if(d > gmax) gmax = d;
+      pairMax = pairMax === null ? d : Math.max(pairMax, d);
+    });
+    spark.push(pairMax);
+  }
+  per.forEach(p => { p.rms = p.n ? Math.sqrt(p.sumSq / p.n) : null; });
+  return {available:true, waiting: totalN === 0, readings: series.length, pairs: series.length - 1, phases: per,
+          max: gmax, rms: totalN ? Math.sqrt(totalSq / totalN) : null, excluded, spark};
+}
+// Serie de la sesión = las lecturas registradas + la lectura actual si todavía no se registró (movimiento en curso).
+function peLiveSeries(){
+  const arr = valueHistory.map(h => h.values);
+  const last = arr[arr.length - 1];
+  const same = last && TREE.feature_order.every(f => last[f] === currentValues[f]);
+  if(!same) arr.push(currentValues);
+  return arr;
+}
+// ---- THD de corriente: solo con factor de desplazamiento (Cos Phi) y factor de potencia verdadero POR FASE ----
+// THD_I(%) = 100·√((FP_desplazamiento/FP_verdadero)² − 1), con FP_verdadero = P/S. Válido solo con tensión
+// prácticamente sinusoidal. El programa decide por las columnas que el dataset realmente trae.
+function peThdIPlan(){
+  const names = Object.keys(TREE.feature_stats || {});
+  const phaseOf = n => { const m = n.replace(/\bavg\b/i, '').match(/(?:^|[\s_\-])([ABC])N?(?=$|[\s_\-])/); return m ? m[1].toUpperCase() : null; };
+  const dpf = {}, pfc = {}, P = {}, S = {}, I = {};
+  names.forEach(n => {
+    const ph = phaseOf(n); if(!ph || /total/i.test(n)) return;
+    if(/cos\s*(phi|φ)|displacement|desplaz/i.test(n)) dpf[ph] = n;
+    else if(/power\s*factor|factor\s*de\s*potencia|(^|[\s_\-])pf([\s_\-]|$)/i.test(n)) pfc[ph] = n;
+    else if(/active\s*power|potencia\s*activa/i.test(n)) P[ph] = n;
+    else if(/apparent\s*power|potencia\s*aparente/i.test(n)) S[ph] = n;
+    else if(/^current\s+[ABC]N?\s*(avg)?$/i.test(n.trim())) I[ph] = n;
+  });
+  const phases = [];
+  ['A', 'B', 'C'].forEach(ph => {
+    const hasPf = !!pfc[ph] || (!!P[ph] && !!S[ph]);
+    if(dpf[ph] && hasPf) phases.push({ph, label: 'Fase ' + ph, dpf: dpf[ph], pfCol: pfc[ph] || null, P: P[ph] || null, S: S[ph] || null, I: I[ph] || null});
+  });
+  return {
+    dpfPhases: Object.keys(dpf), pfPhases: ['A', 'B', 'C'].filter(ph => pfc[ph] || (P[ph] && S[ph])),
+    phases, estimable: phases.length > 0
+  };
+}
+// Texto de "no estimable": solo se muestra cuando el programa realmente no puede calcularlo, y describe lo que falta.
+function peThdINoText(plan, html){
+  const cp = html ? '<span class="pe-mono">Cos Phi</span>' : 'Cos Phi';
+  const hasD = plan.dpfPhases.length > 0, hasP = plan.pfPhases.length > 0;
+  const tail = 'Con estos datos no podemos estimar de forma verificable el THD en porcentaje ni la corriente armónica en amperios.';
+  if(hasD && !hasP) return `El dataset registra el factor de desplazamiento (${cp}) por fase, pero no incluye el factor de potencia verdadero por fase ni mediciones de armónicos de corriente. ${tail}`;
+  if(!hasD && hasP) return `El dataset registra el factor de potencia verdadero por fase, pero no incluye el factor de desplazamiento (${cp}) por fase ni mediciones de armónicos de corriente. ${tail}`;
+  return `El dataset no incluye el factor de desplazamiento (${cp}) ni el factor de potencia verdadero por fase, ni mediciones de armónicos de corriente. ${tail}`;
+}
+function peThdIOf(values, ph){
+  const dpf = Math.abs(values[ph.dpf]);
+  let pf;
+  if(ph.pfCol) pf = Math.abs(values[ph.pfCol]);
+  else { const Pw = values[ph.P], Sa = values[ph.S]; pf = Sa > 0 ? Math.abs(Pw) / Sa : NaN; }
+  if(!(isFinite(dpf) && isFinite(pf)) || dpf <= 0 || pf <= 0 || dpf > 1.0001 || pf > 1.0001) return null;   // incluye códigos de error del sensor
+  const ratio = dpf / pf;
+  if(ratio < 0.999) return null;       // el FP verdadero no puede superar al de desplazamiento: datos inconsistentes
+  const thd = 100 * Math.sqrt(Math.max(0, ratio * ratio - 1));
+  const i = ph.I ? values[ph.I] : NaN;
+  const ih = isFinite(i) && i >= 0 ? i * (thd / 100) / Math.sqrt(1 + (thd / 100) * (thd / 100)) : null;   // corriente armónica (A, RMS)
+  return {thd, ih};
+}
+function peThdI(mode){
+  const plan = peThdIPlan();
+  if(!plan.estimable) return {plan, estimable: false, text: peThdINoText(plan, true), textPlain: peThdINoText(plan, false)};
+  const rows = (mode === 'history' && history.length ? history.map(h => h.values).filter(Boolean) : [currentValues]);
+  const stats = plan.phases.map(ph => {
+    let n = 0, sum = 0, max = null, last = null, ihLast = null;
+    rows.forEach((v, idx) => {
+      const r = peThdIOf(v, ph); if(!r) { if(idx === rows.length - 1){ last = null; ihLast = null; } return; }
+      n++; sum += r.thd; if(max === null || r.thd > max) max = r.thd;
+      if(idx === rows.length - 1){ last = r.thd; ihLast = r.ih; }
+    });
+    return {label: ph.label, n, mean: n ? sum / n : null, max, last, ihLast};
+  });
+  return {plan, estimable: true, stats, rows: rows.length, mode};
+}
+
+function peIndicators(mode){
+  const stats = TREE.feature_stats || {};
+  const freqDirect = peKeyFeats('freq');
+  const flickDirect = peKeyFeats('flicker');
+  const thdIDirect = peThdIDirectFeats();
+  let fluct, windowLabel;
+  if(mode === 'history' && historyFluct){
+    fluct = historyFluct;
+    windowLabel = `${historyFluct.readings.toLocaleString('es-CO')} registros consecutivos del archivo subido`;
+  } else {
+    fluct = peFluctCompute(peLiveSeries());
+    windowLabel = `${fluct.readings || 0} ${fluct.readings === 1 ? 'lectura' : 'lecturas'} de la sesión`;
+  }
+  // THD de tensión: si el dataset lo mide, el indicador lo reconoce y lo muestra igual que la categoría de eventos
+  let thdV = null;
+  if(peKeyFeats('thd').length){
+    if(mode === 'history' && history.length){
+      const ev = buildHistoricalPowerEvents().find(e => e.key === 'thd');
+      let max = null, mf = null;
+      history.forEach(h => { const r = h.values && peThdVWorst(h.values); if(r && (max === null || r.value > max)){ max = r.value; mf = r.feat; } });
+      thdV = {mode: 'history', value: max, feat: mf, status: ev.status, text: ev.text};
+    } else {
+      const ev = evaluatePowerEvents(currentValues).find(e => e.key === 'thd'), r = peThdVWorst(currentValues);
+      thdV = {mode: 'live', value: r ? r.value : null, feat: r ? r.feat : null, all: r ? r.all : [], status: ev.status, text: ev.text};
+    }
+  }
+  return {freqDirect, flickDirect, thdIDirect, thdV, thdI: peThdI(mode), fluct, windowLabel, mode};
+}
+const peF2 = v => v === null || v === undefined ? '—' : v.toFixed(v >= 10 ? 1 : 2);
+function peSparkSvg(vals){
+  const pts = vals.map((v, i) => v === null ? null : [i, v]).filter(Boolean);
+  if(pts.length < 2) return '';
+  const W = 160, H = 28, n = vals.length - 1, mx = Math.max(...pts.map(q => q[1]), 0.0001);
+  const xy = q => `${(q[0] / Math.max(1, n) * (W - 4) + 2).toFixed(1)},${(H - 3 - q[1] / mx * (H - 8)).toFixed(1)}`;
+  const last = pts[pts.length - 1];
+  return `<svg class="pe-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Variación de tensión por lectura"><polyline fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" points="${pts.map(xy).join(' ')}"/><circle cx="${xy(last).split(',')[0]}" cy="${xy(last).split(',')[1]}" r="2.5" fill="var(--accent)"/></svg>`;
+}
+function peIndCardsHtml(ind, opts){
+  opts = opts || {};
+  const card = (name, badgeCls, badge, valueHtml, text, extra) =>
+    `<div class="pe-ind-card"><div class="pe-ind-top"><span class="pe-ind-name">${name}</span><span class="pe-badge ${badgeCls}">${badge}</span></div>${valueHtml ? `<div class="pe-ind-val">${valueHtml}</div>` : ''}<div class="pe-ind-text">${text}</div>${extra || ''}</div>`;
+  const cards = [];
+
+  // 1) Frecuencia
+  if(ind.freqDirect.length){
+    cards.push(card('Frecuencia', 'direct', 'Medida directa', '', `El dataset incluye una variable de frecuencia (${peFeatName(ind.freqDirect[0])}): se evalúa en la categoría «Frecuencia». No hace falta una referencia.`));
+  } else {
+    cards.push(card(`Frecuencia nominal de referencia: ${PE_NOMINAL_HZ} Hz`, 'ref', 'Referencia', `${PE_NOMINAL_HZ}<small>Hz</small>`,
+      'Valor nominal de referencia, si corresponde a la instalación. No es una frecuencia medida ni calculada: con estos registros no existe una fórmula válida para reconstruirla (los ángulos Current Phi no bastan).'));
+  }
+
+  // 2) THD: la tensión (medida, si el dataset la trae) y la corriente (medida, estimada o no estimable)
+  let iPart;     // {name, badgeCls, badge, valueHtml, text, extra}
+  if(ind.thdIDirect.length){
+    iPart = {name: 'THD de corriente', badgeCls: 'direct', badge: 'Medida directa', valueHtml: '', text: `El dataset incluye una variable de THD de corriente (${peFeatName(ind.thdIDirect[0])}): no hace falta estimarla.`, extra: ''};
+  } else if(!ind.thdI.estimable){
+    iPart = {name: 'THD de corriente: no estimable con los datos disponibles', badgeCls: 'nest', badge: 'No estimable', valueHtml: '—', text: ind.thdI.text, extra: ''};
+  } else {
+    const t = ind.thdI, hist = ind.mode === 'history';
+    const note = `<div class="pe-ind-note">${PE_THD_FORMULA}, con FP_verdadero = P/S por fase. Es una estimación: solo es válida con tensión prácticamente sinusoidal y un factor de desplazamiento independiente del factor de potencia verdadero.</div>`;
+    const vals = t.stats.map(x => hist ? x.max : x.last).filter(v => v !== null);
+    if(!vals.length){
+      iPart = {name: 'THD de corriente (estimación condicionada)', badgeCls: 'nest', badge: 'Estimación condicionada', valueHtml: '—', text: 'El dataset trae los factores necesarios, pero no hay valores válidos para estimarlo (factor fuera de 0–1, código de error del sensor, o factor de potencia verdadero mayor que el de desplazamiento).', extra: note};
+    } else {
+      const chips = t.stats.map(x => {
+        const v = hist ? x.max : x.last;
+        const tag = v === null ? 'sin valor válido' : (hist ? `media ${peF2(x.mean)}%` : (x.ihLast !== null ? `I armónica ${x.ihLast.toFixed(1)} A` : 'sin corriente RMS'));
+        return `<div class="pe-read ind"><span class="pe-read-top">${x.label}</span><span class="pe-read-val">${peF2(v)}%<small>${hist ? 'máx.' : 'THD I'}</small></span><span class="pe-read-tag">${tag}</span></div>`;
+      }).join('');
+      iPart = {name: 'THD de corriente (estimación condicionada)', badgeCls: 'nest', badge: 'Estimación condicionada', valueHtml: `${peF2(Math.max(...vals))}<small>% ${hist ? 'máx. en el historial' : 'máx. entre fases'}</small>`,
+        text: hist ? `Estimado a partir de ${t.rows.toLocaleString('es-CO')} registros del historial.` : 'Estimado con la lectura actual.', extra: `<div class="pe-reads">${chips}</div>${note}`};
+    }
+  }
+  const partHtml = p => `<div class="pe-ind-part"><div class="pe-ind-top"><span class="pe-ind-name">${p.name}</span><span class="pe-badge ${p.badgeCls}">${p.badge}</span></div>${p.valueHtml ? `<div class="pe-ind-val">${p.valueHtml}</div>` : ''}<div class="pe-ind-text">${p.text}</div>${p.extra || ''}</div>`;
+  if(!ind.thdV){
+    cards.push(card(iPart.name, iPart.badgeCls, iPart.badge, iPart.valueHtml, iPart.text, iPart.extra));
+  } else {
+    // El dataset mide THD de tensión: se muestra aquí con el MISMO valor y estado que la categoría «Distorsión armónica (THD)»
+    const t = ind.thdV, hist = t.mode === 'history';
+    const st = {none: 'sin evidencia (dentro del límite de 8 %)', detected: 'evidencia detectada (supera el 8 %)', na: 'no evaluable en esta lectura'}[t.status];
+    const chips = hist ? '' : `<div class="pe-reads">${(t.all || []).map(x => `<div class="pe-read ${x.v > 8 ? 'bad' : 'ok'}" title="${peFeatName(x.f)}"><span class="pe-read-top">${peFeatName(x.f)}</span><span class="pe-read-val">${x.v.toFixed(1)}%</span><span class="pe-read-tag">${x.v > 8 ? '▲ Supera 8 %' : 'Normal'}${x.f === t.feat ? ' · evaluado' : ''}</span></div>`).join('')}</div>`;
+    const vPart = {name: 'THD de tensión', badgeCls: 'direct', badge: 'Medida directa',
+      valueHtml: t.value === null ? '—' : `${t.value.toFixed(1)}<small>% ${hist ? 'máx. en el historial' : '· ' + peFeatName(t.feat)}</small>`,
+      text: hist ? `Medido directamente en el dataset. En «Distorsión armónica (THD)» de Eventos de calidad de energía: ${t.text}`
+                 : `Medido directamente en el dataset. Se evalúa en «Distorsión armónica (THD)» de Eventos de calidad de energía: ${st}.`,
+      extra: chips};
+    cards.push(`<div class="pe-ind-card"><span class="pe-ind-name">THD (distorsión armónica)</span>${partHtml(vPart)}${partHtml(iPart)}</div>`);
+  }
+
+  // 3) Índice de fluctuación de tensión
+  const fl = ind.fluct;
+  const flName = 'Índice de fluctuación de tensión (%)';
+  const flNote = `<div class="pe-ind-note">${PE_FLUCT_FORMULA}, con V_ref = promedio histórico de cada fase. Mide variación de tensión entre registros consecutivos; <b>no</b> es severidad de flicker (Pst/Plt).</div>`;
+  if(ind.flickDirect.length){
+    cards.push(card('Flicker', 'direct', 'Medida directa', '', `El dataset incluye Pst/Plt (${peFeatName(ind.flickDirect[0])}): se evalúa en la categoría «Flicker». No hace falta el indicador indirecto.`));
+  } else if(!fl.available){
+    cards.push(card(flName, 'nest', 'No calculable', '—', 'El archivo con el que se entrenó el árbol no incluye voltajes por fase: no hay variación de tensión que calcular.'));
+  } else if(fl.waiting){
+    cards.push(card(flName, 'nest', 'Indicador indirecto', '—',
+      fl.readings < 2 ? `Se necesitan al menos 2 lecturas consecutivas para calcular la variación entre registros (hay ${fl.readings}). Mueve un control o carga un ejemplo.`
+                      : 'Todas las variaciones de esta ventana involucran una tensión colapsada: se reportan en «Interrupciones de suministro».', flNote));
+  } else {
+    const chips = fl.phases.map(p => `<div class="pe-read ind" title="V_ref = ${fmt(p.ref, p.f)}"><span class="pe-read-top">${p.label}</span><span class="pe-read-val">${peF2(p.last)}%<small>actual</small></span><span class="pe-read-tag">máx. ${peF2(p.n ? p.max : null)}% · RMS ${peF2(p.rms)}%</span></div>`).join('');
+    const exc = fl.excluded ? `<div class="pe-ind-note">${fl.excluded} variación${fl.excluded === 1 ? '' : 'es'} excluida${fl.excluded === 1 ? '' : 's'} por tensión colapsada (ver «Interrupciones de suministro»).</div>` : '';
+    cards.push(card(flName, 'nest', 'Indicador indirecto', `${peF2(fl.max)}<small>% máx. · ${peF2(fl.rms)}% RMS</small>`,
+      `Variación entre registros consecutivos, calculada sobre ${ind.windowLabel}. «Actual» es la variación entre las dos últimas lecturas.`,
+      `<div class="pe-reads">${chips}</div>${peSparkSvg(fl.spark)}${exc}${flNote}`));
+  }
+  return `<div class="pe-ind-grid${opts.single ? ' single' : ''}">${cards.join('')}</div>`;
+}
+// Misma información en texto plano, para los reportes exportables.
+function peIndText(ind){
+  const L = [];
+  L.push('  - Frecuencia: ' + (ind.freqDirect.length ? 'medida directamente (' + peFeatName(ind.freqDirect[0]) + ').' : `frecuencia nominal de referencia: ${PE_NOMINAL_HZ} Hz (referencia, no medición ni cálculo).`));
+  if(ind.thdV){
+    const t = ind.thdV;
+    L.push('  - THD de tensión: medido directamente' + (t.value === null ? '.' : ` (${peFeatName(t.feat)} = ${t.value.toFixed(1)}%${t.mode === 'history' ? ', máximo del historial' : ''}); `) + (t.value === null ? '' : 'se evalúa en «Distorsión armónica (THD)» de Eventos de calidad de energía.'));
+  }
+  if(ind.thdIDirect.length) L.push('  - THD de corriente: medida directamente (' + peFeatName(ind.thdIDirect[0]) + ').');
+  else if(!ind.thdI.estimable) L.push('  - THD de corriente: no estimable con los datos disponibles. ' + ind.thdI.textPlain);
+  else {
+    const hist = ind.mode === 'history';
+    L.push('  - THD de corriente (estimación condicionada, válida solo con tensión prácticamente sinusoidal y factor de desplazamiento independiente del factor de potencia verdadero):');
+    ind.thdI.stats.forEach(x => { const v = hist ? x.max : x.last;
+      L.push(`      ${x.label}: ` + (v === null ? 'sin valor válido' : (hist ? `máx. ${peF2(v)}% · media ${peF2(x.mean)}%` : `${peF2(v)}%` + (x.ihLast !== null ? ` · corriente armónica ${x.ihLast.toFixed(1)} A` : '')))); });
+  }
+  const fl = ind.fluct;
+  if(ind.flickDirect.length) L.push('  - Flicker: Pst/Plt medido directamente (' + peFeatName(ind.flickDirect[0]) + ').');
+  else if(!fl.available) L.push('  - Índice de fluctuación de tensión (%): no calculable, el archivo no incluye voltajes por fase.');
+  else if(fl.waiting) L.push('  - Índice de fluctuación de tensión (%): sin datos suficientes (se necesitan al menos 2 lecturas consecutivas sin colapso de tensión).');
+  else {
+    L.push(`  - Índice de fluctuación de tensión (%): máximo ${peF2(fl.max)}% · RMS ${peF2(fl.rms)}% — ventana: ${ind.windowLabel}. Indicador indirecto, no es severidad de flicker (Pst/Plt).`);
+    fl.phases.forEach(p => L.push(`      ${p.label}: actual ${peF2(p.last)}% · máx. ${peF2(p.n ? p.max : null)}% · RMS ${peF2(p.rms)}%`));
+    if(fl.excluded) L.push(`      (${fl.excluded} variación(es) excluida(s) por tensión colapsada; ver Interrupciones de suministro)`);
+  }
+  return L;
+}
+const PE_IND_METHOD_HTML = `
+  <div class="pe-method">
+    <b>Frecuencia.</b> No existe una fórmula válida con estos registros: los ángulos «Current Phi … Avg» no permiten reconstruir la frecuencia eléctrica. Se muestra únicamente el valor nominal de ${PE_NOMINAL_HZ} Hz como referencia, si corresponde a la instalación.
+    <br><br><b>THD de corriente.</b> Solo podría estimarse con:
+    <code>${PE_THD_FORMULA}</code>
+    y únicamente si el dataset trae, por fase, el factor de desplazamiento y el factor de potencia verdadero (P/S), y la tensión es prácticamente sinusoidal. El panel hace esa comprobación con las columnas que realmente tiene: si falta alguna, declara el THD «no estimable» y explica qué falta, en lugar de inventar un valor.
+    <br><br><b>Índice de fluctuación de tensión.</b> Para cada fase (A, B y C), entre registros consecutivos:
+    <code>${PE_FLUCT_FORMULA}</code>
+    con V_ref = promedio histórico de la fase. Se muestra la variación actual y, sobre la ventana, el máximo y el RMS. Límites: mide variación entre registros, no la severidad de flicker Pst/Plt (que exige procesamiento temporal normalizado, IEC 61000-4-15); no considera el intervalo de tiempo entre registros; y excluye los pares con tensión colapsada, que se reportan como interrupción.
+  </div>`;
+
+const PE_INTERR_EXPLAIN_HTML = `
+  <div class="pe-method">
+    <b>Qué mide.</b> Si el voltaje de alguna fase cayó por debajo del 10 % de su valor histórico. Es el criterio de amplitud con que IEEE 1159 define una interrupción (menos de 0.1 pu); el valor histórico del dataset hace de referencia de la tensión nominal.
+    <br><br><b>Qué no mide.</b> Cuánto duró el corte ni cuántos hubo. Cada lectura resume un intervalo de tiempo, y esa duración (de ciclos a minutos) es lo que IEEE 1159 usa para llamarla momentánea, temporal o sostenida.
+    <br><br><b>Cómo leerlo.</b> «Evidencia detectada»: en esa lectura la tensión se perdió casi por completo. «Sin evidencia»: los datos no muestran pérdida de tensión; no descarta un corte más breve que el intervalo de la lectura. Para medir la duración exacta se necesita el registro de eventos del medidor.
+  </div>`;
+
+let lastIndicators = null;
+function renderPowerIndicators(){
+  const host = document.getElementById('pe-ind');
+  if(!host) return;
+  lastIndicators = peIndicators('live');
+  host.innerHTML = peIndCardsHtml(lastIndicators);
+}
+
+/* ---------------- POWER QUALITY EVENTS (las 6 categorías clásicas, según las variables disponibles) ---------------- */
+// Evalúa las 6 categorías clásicas de eventos de calidad de energía usando SOLO las variables que el
+// archivo con el que se entrenó el árbol realmente contiene. Si una variable no existe (por ejemplo
+// frecuencia, THD o flicker en el dataset actual), la categoría se declara "no evaluable" en vez de
+// inventar un resultado. Los promedios históricos salen de TREE.feature_stats, así que se actualizan
+// solos cuando se reentrena el árbol con otro archivo.
+const PE_DEFS = [
+  {key:'volt',    name:'Sobretensiones y Subtensiones', missing:'las variables de voltaje por fase',
+   rule:'Voltaje de fase fuera de ±10% de su promedio histórico'},
+  {key:'freq',    name:'Frecuencia', missing:'una variable de frecuencia',
+   rule:'Desviación mayor a ±1% respecto a la frecuencia nominal (50 o 60 Hz)'},
+  {key:'thd',     name:'Distorsión Armónica (THD)', missing:'una variable de THD',
+   rule:'THD de tensión mayor a 8% (IEEE 519 / EN 50160, baja tensión)'},
+  {key:'flicker', name:'Flicker', missing:'una variable de flicker (Pst/Plt)',
+   rule:'Pst o Plt mayor a 1.0 (IEC 61000-4-15)'},
+  {key:'interr',  name:'Interrupciones de Suministro', missing:'las variables de voltaje por fase',
+   rule:'Voltaje de una fase por debajo del 10 % de su valor histórico (criterio de amplitud de interrupción, IEEE 1159: menos de 0.1 pu)'},
+  {key:'fp',      name:'Factor de Potencia', missing:'el factor de potencia total (Cos Phi Total Avg)',
+   rule:'Cos φ total menor a 0.85'}
+];
+const PE_VOLT_FEATS = ['Vrms ph-n AN Avg', 'Vrms ph-n BN Avg', 'Vrms ph-n CN Avg'];
+const PE_FP_FEAT = 'Cos Phi Total Avg';
+const PE_RX = {
+  freq:    {inc:/freq|frec/i},
+  thd:     {inc:/thd/i, exc:/curr|corr/i},
+  flicker: {inc:/flicker|(^|[^a-z])(pst|plt)([^a-z]|$)/i}
+};
+const PE_INTERR_NOTE = 'Se detecta la pérdida de tensión, no cuánto duró el corte.';
+const PE_STATUS_LABEL = {none:'Sin evidencia', na:'No evaluable', detected:'Evidencia detectada'};
+
+function peFeatName(f){ return (LABELS[f] || {name: f}).name; }
+function peHas(values, f){
+  return !!(TREE.feature_stats && TREE.feature_stats[f]) && typeof values[f] === 'number' && !Number.isNaN(values[f]);
+}
+// Columnas del dataset entrenado que sirven para evaluar una categoría (vacío = no evaluable).
+function peKeyFeats(key){
+  const stats = TREE.feature_stats || {};
+  if(key === 'volt' || key === 'interr') return PE_VOLT_FEATS.filter(f => stats[f]);
+  if(key === 'fp') return stats[PE_FP_FEAT] ? [PE_FP_FEAT] : [];
+  const rx = PE_RX[key];
+  return Object.keys(stats).filter(f => rx.inc.test(f) && !(rx.exc && rx.exc.test(f)));
+}
+// Qué THD trae el dataset. Las dos secciones (Eventos e Indicadores indirectos) leen de aquí, así que no pueden
+// contradecirse: el THD de TENSIÓN lo evalúa la categoría de eventos; el de CORRIENTE lo trata el indicador.
+function peThdIDirectFeats(){ return Object.keys(TREE.feature_stats || {}).filter(f => /thd/i.test(f) && /curr|corr/i.test(f)); }
+// Lectura de THD de tensión que se evalúa (la peor entre las columnas válidas). La usan la categoría de eventos,
+// sus chips y el indicador, para que muestren exactamente el mismo valor.
+function peThdVWorst(values){
+  const valid = peKeyFeats('thd').filter(x => peHas(values, x) && values[x] >= 0 && values[x] <= 100);
+  if(!valid.length) return null;
+  const feat = valid.reduce((a, b) => values[b] > values[a] ? b : a);
+  return {feat, value: values[feat], all: valid.map(f => ({f, v: values[f]}))};
+}
+function peMissingText(key){
+  const d = PE_DEFS.find(x => x.key === key);
+  if(key === 'thd' && peThdIDirectFeats().length)
+    return `El archivo incluye THD de corriente (${peFeatName(peThdIDirectFeats()[0])}), pero no THD de tensión, que es el que se evalúa en esta categoría — el THD de corriente se muestra como medida directa en «Indicadores indirectos».`;
+  return `El archivo con el que se entrenó el árbol actual no incluye ${d.missing} — esta categoría no se puede evaluar con los datos disponibles.`;
+}
+
+function evaluatePowerEvents(values){
+  values = values || currentValues;
+  const events = [];
+  const add = (key, status, text, extra) => events.push(Object.assign(
+    {key, name: PE_DEFS.find(d => d.key === key).name, status, text}, extra || {}));
+  const pct = d => (d > 0 ? '+' : '') + d.toFixed(1) + '%';
+
+  // Voltaje por fase vs. su promedio histórico (base de las categorías 1 y 5)
+  const vd = PE_VOLT_FEATS.filter(f => peHas(values, f)).map(f => {
+    const mean = TREE.feature_stats[f].mean, v = values[f];
+    return {f, v, mean, dev: mean > 0 ? (v / mean - 1) * 100 : 0, collapse: mean > 0 && v < mean * 0.10};
+  });
+  const collapsed = vd.filter(d => d.collapse);
+  const okPhases = vd.filter(d => !d.collapse);
+  const over  = okPhases.filter(d => d.dev > 10);
+  const under = okPhases.filter(d => d.dev < -10);
+  const names = arr => arr.map(d => peFeatName(d.f)).join(', ');
+  const collapsedNames = names(collapsed);
+
+  // 1) Sobretensiones y subtensiones (±10% del promedio histórico; por debajo del 10% ya es colapso)
+  if(!vd.length){
+    add('volt', 'na', peMissingText('volt'));
+  } else if(!okPhases.length){
+    add('volt', 'na', `Todas las fases medidas están en colapso (${collapsedNames}): no hay un voltaje válido para evaluar sobretensión o subtensión — se reporta en Interrupciones de suministro.`);
+  } else {
+    const worst = Math.max(...okPhases.map(d => Math.abs(d.dev)));
+    const margin = {ratio: worst / 10, label: `Mayor desviación: ${worst.toFixed(1)}% · límite ±10%`};
+    if(over.length || under.length){
+      const parts = over.map(d => `${peFeatName(d.f)} = ${fmt(d.v, d.f)} (${pct(d.dev)} respecto a su promedio histórico de ${fmt(d.mean, d.f)}) — posible sobretensión`)
+        .concat(under.map(d => `${peFeatName(d.f)} = ${fmt(d.v, d.f)} (${pct(d.dev)} respecto a su promedio histórico de ${fmt(d.mean, d.f)}) — posible subtensión`));
+      let t = parts.join('; ') + '.';
+      if(collapsed.length) t += ` ${collapsedNames} en colapso: se reporta en Interrupciones de suministro.`;
+      add('volt', 'detected', t, {margin, overNames: names(over), underNames: names(under),
+        kinds: [].concat(over.length ? ['over'] : [], under.length ? ['under'] : [])});
+    } else {
+      let t = `Los voltajes medidos (${names(okPhases)}) están dentro de ±10% de su promedio histórico — no hay evidencia de sobretensión ni subtensión en esta lectura.`;
+      if(collapsed.length) t += ` ${collapsedNames} en colapso: se reporta en Interrupciones de suministro.`;
+      add('volt', 'none', t, {margin});
+    }
+  }
+
+  // 2) Frecuencia (solo si el dataset trae una columna de frecuencia)
+  const ff = peKeyFeats('freq');
+  if(!ff.length){
+    add('freq', 'na', peMissingText('freq'));
+  } else {
+    const f = ff.find(x => peHas(values, x) && values[x] >= 40 && values[x] <= 70);
+    if(!f){
+      add('freq', 'na', `No hay un valor válido de ${peFeatName(ff[0])} en esta lectura (ausente o fuera del rango físico de 40–70 Hz) — no se puede evaluar.`);
+    } else {
+      const v = values[f], nominal = Math.abs(v - 50) < Math.abs(v - 60) ? 50 : 60;
+      const dev = (v - nominal) / nominal * 100;
+      const margin = {ratio: Math.abs(dev) / 1, label: `Desviación: ${Math.abs(dev).toFixed(2)}% · límite ±1%`};
+      if(Math.abs(dev) > 1) add('freq', 'detected', `${peFeatName(f)} = ${v.toFixed(2)} Hz (${pct(dev)} respecto a la nominal de ${nominal} Hz) — supera la tolerancia de ±1%.`, {margin});
+      else add('freq', 'none', `${peFeatName(f)} = ${v.toFixed(2)} Hz, dentro de ±1% de la nominal de ${nominal} Hz — sin evidencia de este evento.`, {margin});
+    }
+  }
+
+  // 3) Distorsión armónica de tensión (solo si el dataset trae THD de tensión)
+  const tf = peKeyFeats('thd');
+  if(!tf.length){
+    add('thd', 'na', peMissingText('thd'));
+  } else {
+    const worst = peThdVWorst(values);
+    if(!worst){
+      add('thd', 'na', `No hay un valor válido de ${peFeatName(tf[0])} en esta lectura (ausente o fuera de 0–100%) — no se puede evaluar.`);
+    } else {
+      const w = worst.feat, v = worst.value;
+      const margin = {ratio: v / 8, label: `THD de tensión: ${v.toFixed(1)}% · límite 8%`};
+      if(v > 8) add('thd', 'detected', `${peFeatName(w)} = ${v.toFixed(1)}% (THD de tensión), supera el 8% recomendado para baja tensión (IEEE 519 / EN 50160) — evidencia de distorsión armónica.`, {margin});
+      else add('thd', 'none', `${peFeatName(w)} = ${v.toFixed(1)}% (THD de tensión), dentro del límite de 8% (IEEE 519 / EN 50160) — sin evidencia de este evento.`, {margin});
+    }
+  }
+
+  // 4) Flicker (solo si el dataset trae Pst/Plt)
+  const kf = peKeyFeats('flicker');
+  if(!kf.length){
+    add('flicker', 'na', peMissingText('flicker'));
+  } else {
+    const valid = kf.filter(x => peHas(values, x) && values[x] >= 0 && values[x] <= 50);
+    if(!valid.length){
+      add('flicker', 'na', `No hay un valor válido de ${peFeatName(kf[0])} en esta lectura (ausente o fuera de rango) — no se puede evaluar.`);
+    } else {
+      const w = valid.reduce((a, b) => values[b] > values[a] ? b : a), v = values[w];
+      const margin = {ratio: v / 1, label: `Flicker: ${v.toFixed(2)} · límite 1.0`};
+      if(v > 1) add('flicker', 'detected', `${peFeatName(w)} = ${v.toFixed(2)}, supera el límite de 1.0 (IEC 61000-4-15) — evidencia de flicker.`, {margin});
+      else add('flicker', 'none', `${peFeatName(w)} = ${v.toFixed(2)}, dentro del límite de 1.0 (IEC 61000-4-15) — sin evidencia de este evento.`, {margin});
+    }
+  }
+
+  // 5) Interrupciones de suministro (voltaje por debajo del 10% de su promedio histórico)
+  if(!vd.length){
+    add('interr', 'na', peMissingText('interr'));
+  } else {
+    const minRatio = Math.min(...vd.map(d => d.mean > 0 ? d.v / d.mean : 1));
+    const margin = {ratio: Math.max(0, (1 - minRatio) / 0.9), label: `Voltaje mínimo: ${(minRatio * 100).toFixed(0)}% de su promedio · colapso bajo 10%`};
+    if(collapsed.length){
+      add('interr', 'detected', collapsed.map(d => `${peFeatName(d.f)} cayó a ${fmt(d.v, d.f)}, por debajo del 10 % de su valor histórico (${fmt(d.mean * 0.10, d.f)})`).join('; ') + ` — evidencia de interrupción de suministro. ${PE_INTERR_NOTE}`, {margin, phaseNames: collapsedNames});
+    } else {
+      add('interr', 'none', `Ningún voltaje medido cayó por debajo del 10 % de su valor histórico — sin evidencia de interrupción de suministro. ${PE_INTERR_NOTE}`, {margin});
+    }
+  }
+
+  // 6) Factor de potencia (Cos φ total; mismo criterio que el índice de factor de potencia)
+  if(!peKeyFeats('fp').length){
+    add('fp', 'na', peMissingText('fp'));
+  } else if(!peHas(values, PE_FP_FEAT)){
+    add('fp', 'na', 'No hay un valor de factor de potencia total en esta lectura — no se puede evaluar.');
+  } else {
+    const fp = values[PE_FP_FEAT];
+    if(fp < 0 || fp > 1.2){
+      add('fp', 'na', `El valor registrado (${fp.toFixed(2)}) está fuera del rango físico posible (0–1) — probable código de error del sensor, no un factor de potencia real; no se puede evaluar.`);
+    } else {
+      const margin = {ratio: fp >= 1 ? 0 : (1 - fp) / 0.15, label: `Cos φ: ${fp.toFixed(2)} · mínimo aceptable 0.85`};
+      if(fp < 0.85) add('fp', 'detected', `El factor de potencia medido (${fp.toFixed(2)}) está por debajo de lo aceptable (≥0.85) — evidencia de uso ineficiente de la energía, posibles cargas reactivas.`, {margin});
+      else add('fp', 'none', `El factor de potencia medido (${fp.toFixed(2)}) está dentro de lo aceptable (≥0.85) — sin evidencia de este evento.`, {margin});
+    }
+  }
+  events.forEach(e => { e.reads = peReadouts(e.key, values); });
+  return events;
+}
+
+// Lecturas que respaldan cada categoría: valor medido, desviación y estado por variable (se redibuja en cada lectura).
+function peReadouts(key, values){
+  const out = [];
+  const num = (v, d) => (v > 0 ? '+' : '') + v.toFixed(d);
+  if(key === 'volt' || key === 'interr'){
+    PE_VOLT_FEATS.forEach((f, i) => {
+      if(!peHas(values, f)) return;
+      const mean = TREE.feature_stats[f].mean, v = values[f];
+      const ratio = mean > 0 ? v / mean : 1, dev = (ratio - 1) * 100, collapse = ratio < 0.10;
+      const title = `${peFeatName(f)} · promedio histórico ${fmt(mean, f)}`;
+      if(key === 'volt'){
+        let state = 'ok', tag = 'Normal';
+        if(collapse){ state = 'collapse'; tag = 'Colapso'; }
+        else if(dev > 10){ state = 'over'; tag = '▲ Sobretensión'; }
+        else if(dev < -10){ state = 'under'; tag = '▼ Subtensión'; }
+        out.push({label: 'Fase ' + 'ABC'[i], value: fmt(v, f), extra: num(dev, 1) + '%', tag, state, title});
+      } else {
+        out.push({label: 'Fase ' + 'ABC'[i], value: fmt(v, f), extra: (ratio * 100).toFixed(0) + '% del prom.', tag: collapse ? 'Colapso' : 'Presente', state: collapse ? 'collapse' : 'ok', title});
+      }
+    });
+  } else if(key === 'fp'){
+    if(peHas(values, PE_FP_FEAT)){
+      const fp = values[PE_FP_FEAT];
+      if(fp < 0 || fp > 1.2) out.push({label: 'Cos φ total', value: fp.toFixed(2), extra: '', tag: 'Fuera de rango', state: 'na', title: 'Valor fuera del rango físico 0–1'});
+      else out.push({label: 'Cos φ total', value: fp.toFixed(2), extra: 'mín. 0.85', tag: fp < 0.85 ? '▼ Bajo' : 'Aceptable', state: fp < 0.85 ? 'bad' : 'ok', title: peFeatName(PE_FP_FEAT)});
+    }
+  } else {
+    if(key === 'thd'){
+      const wv = peThdVWorst(values);
+      if(wv) out.push({label: 'THD de tensión', value: wv.value.toFixed(1) + '%', extra: 'lím. 8', tag: wv.value > 8 ? '▲ Supera el límite' : 'Normal', state: wv.value > 8 ? 'bad' : 'ok', title: peFeatName(wv.feat)});
+      return out;
+    }
+    const lim = {freq: null, thd: 8, flicker: 1}[key];
+    const feats = peKeyFeats(key).filter(f => peHas(values, f));
+    if(!feats.length) return out;
+    if(key === 'freq'){
+      const f = feats[0], v = values[f], nominal = Math.abs(v - 50) < Math.abs(v - 60) ? 50 : 60, dev = (v - nominal) / nominal * 100;
+      out.push({label: 'Frecuencia', value: v.toFixed(2) + ' Hz', extra: num(dev, 2) + '%', tag: Math.abs(dev) > 1 ? '⚠ Fuera de ±1%' : 'Normal', state: Math.abs(dev) > 1 ? 'bad' : 'ok', title: peFeatName(f)});
+    } else {
+      const w = feats.reduce((a, b) => values[b] > values[a] ? b : a), v = values[w];
+      out.push({label: key === 'thd' ? 'THD' : 'Flicker', value: key === 'thd' ? v.toFixed(1) + '%' : v.toFixed(2), extra: 'lím. ' + lim, tag: v > lim ? '▲ Supera el límite' : 'Normal', state: v > lim ? 'bad' : 'ok', title: peFeatName(w)});
+    }
+  }
+  return out;
+}
+function peReadsHtml(reads){
+  return (reads || []).map(r => `<div class="pe-read ${r.state}" title="${r.title || ''}"><span class="pe-read-top">${r.label}</span><span class="pe-read-val">${r.value}${r.extra ? `<small>${r.extra}</small>` : ''}</span><span class="pe-read-tag">${r.tag}</span></div>`).join('');
+}
+
+// Resultado por lectura guardada (historial / tendencia): esas lecturas no cambian, así que se evalúan una sola vez
+// mientras el árbol sea el mismo. La lectura actual (currentValues) cambia en cada movimiento y NO se cachea.
+const peCache = new WeakMap();
+function peEventsOf(values){
+  const c = peCache.get(values);
+  if(c && c.tree === TREE) return c.ev;
+  const ev = evaluatePowerEvents(values);
+  peCache.set(values, {tree: TREE, ev});
+  return ev;
+}
+
+function summarizePowerEvents(events){
+  return {
+    detected: events.filter(e => e.status === 'detected').length,
+    none: events.filter(e => e.status === 'none').length,
+    na: events.filter(e => e.status === 'na').length
+  };
+}
+function peSummaryText(events){
+  const s = summarizePowerEvents(events);
+  return `${s.detected} con evidencia · ${s.none} sin evidencia · ${s.na} no evaluable${s.na === 1 ? '' : 's'}`;
+}
+// Margen frente al límite: verde < 70% del límite, ámbar entre 70% y 100%, rojo al superarlo.
+function peMeterState(m){ return m.ratio >= 1 ? 'bad' : m.ratio >= 0.7 ? 'warn' : 'ok'; }
+function peMeterLabel(m){
+  const st = peMeterState(m);
+  return m.label + (st === 'bad' ? ' · límite superado' : st === 'warn' ? ' · cerca del límite' : '');
+}
+function peMeterHtml(e){
+  if(!e.margin) return '<div class="pe-meter" hidden><div class="pe-meter-track"><div class="pe-meter-fill ok" style="width:3%"></div></div><div class="pe-meter-label"></div></div>';
+  return `<div class="pe-meter"><div class="pe-meter-track"><div class="pe-meter-fill ${peMeterState(e.margin)}" style="width:${Math.max(3, Math.min(100, e.margin.ratio * 100))}%"></div></div><div class="pe-meter-label">${peMeterLabel(e.margin)}</div></div>`;
+}
+function peItemHtml(e){
+  return `<div class="pe-item ${e.status}" data-key="${e.key}"><div class="pe-item-head"><span class="pe-name">${e.name}</span><span class="pe-head-right"><span class="pe-change" hidden></span><span class="pe-badge ${e.status}">${PE_STATUS_LABEL[e.status]}</span></span></div><div class="pe-text">${e.text}</div><div class="pe-reads">${peReadsHtml(e.reads)}</div>${peMeterHtml(e)}<div class="pe-trend" hidden><div class="pe-trend-strip"></div><span class="pe-trend-label"></span></div></div>`;
+}
+function peListHtml(events, single){
+  return `<div class="pe-list${single ? ' single' : ''}">${events.map(peItemHtml).join('')}</div>`;
+}
+// Actualiza una fila existente en sitio (sin recrearla) para que barras y colores transicionen como el resto del panel.
+function peUpdateItem(row, e){
+  row.className = 'pe-item ' + e.status;
+  const badge = row.querySelector('.pe-badge');
+  badge.className = 'pe-badge ' + e.status;
+  badge.textContent = PE_STATUS_LABEL[e.status];
+  row.querySelector('.pe-text').textContent = e.text;
+  row.querySelector('.pe-reads').innerHTML = peReadsHtml(e.reads);
+  const meter = row.querySelector('.pe-meter');
+  if(e.margin){
+    meter.hidden = false;
+    const fill = meter.querySelector('.pe-meter-fill');
+    fill.className = 'pe-meter-fill ' + peMeterState(e.margin);
+    fill.style.width = Math.max(3, Math.min(100, e.margin.ratio * 100)) + '%';
+    meter.querySelector('.pe-meter-label').textContent = peMeterLabel(e.margin);
+  } else {
+    meter.hidden = true;
+  }
+}
+
+function peFirstVoltSlider(){
+  for(const f of PE_VOLT_FEATS){ const el = document.getElementById('slider-' + cssId(f)); if(el) return el; }
+  return null;
+}
+document.getElementById('pe-open-controls').addEventListener('click', () => {
+  const sl = peFirstVoltSlider();
+  if(!sl) return;
+  const det = sl.closest('details'); if(det) det.open = true;
+  sl.scrollIntoView({behavior: 'smooth', block: 'center'});
+  sl.focus({preventScroll: true});
+});
+let lastPowerEvents = [];
+let pePending = false;   // hubo cambio de estado de algún evento desde el último recompute
+const peChangeTimers = {};
+const peSignature = evs => evs.map(e => e.status).join(',');
+// Se llama en cada recompute (slider, ejemplo, archivo subido). Devuelve true si cambió el estado de alguna categoría.
+function renderPowerEvents(){
+  const host = document.getElementById('pe-list');
+  if(!host) return false;
+  const prev = lastPowerEvents;
+  const next = evaluatePowerEvents(currentValues);
+  if(host.children.length !== next.length) host.innerHTML = next.map(peItemHtml).join('');
+  next.forEach((e, i) => {
+    const row = host.children[i];
+    peUpdateItem(row, e);
+    const p = prev[i];
+    if(p && p.status !== e.status){
+      const label = e.status === 'detected' ? 'Nuevo' : (p.status === 'detected' ? 'Resuelto' : null);
+      if(label){
+        const tag = row.querySelector('.pe-change');
+        tag.textContent = label;
+        tag.className = 'pe-change ' + (label === 'Nuevo' ? 'new' : 'solved');
+        tag.hidden = false;
+        row.classList.remove('pe-flash'); void row.offsetWidth; row.classList.add('pe-flash');
+        clearTimeout(peChangeTimers[e.key]);
+        peChangeTimers[e.key] = setTimeout(() => { tag.hidden = true; row.classList.remove('pe-flash'); }, 4000);
+      }
+    }
+  });
+  lastPowerEvents = next;
+  const openBtn = document.getElementById('pe-open-controls'); if(openBtn) openBtn.hidden = !peFirstVoltSlider();
+  const footV = document.getElementById('pe-foot-volt'); if(footV) footV.hidden = !peFirstVoltSlider();
+  const s = summarizePowerEvents(next);
+  document.getElementById('pe-summary').innerHTML =
+    `<span class="pe-chip ${s.detected ? 'detected' : ''}">${s.detected} con evidencia</span>` +
+    `<span class="pe-chip ${s.none ? 'none' : ''}">${s.none} sin evidencia</span>` +
+    `<span class="pe-chip">${s.na} no evaluable${s.na === 1 ? '' : 's'}</span>`;
+  const changed = prev.length > 0 && peSignature(prev) !== peSignature(next);
+  if(changed) pePending = true;
+  peApplyToPanel();
+  renderPowerIndicators();
+  return changed;
+}
+
+// Tira por categoría con el estado en cada una de las últimas lecturas de la sesión (las mismas del gráfico de tendencia).
+function renderPowerEventTrend(){
+  const host = document.getElementById('pe-list');
+  if(!host || !host.children.length) return;
+  const evs = valueHistory.map(h => peEventsOf(h.values));
+  PE_DEFS.forEach((d, i) => {
+    const row = host.children[i];
+    if(!row) return;
+    const wrap = row.querySelector('.pe-trend');
+    const rows = evs.map(list => list[i]).filter(Boolean);
+    if(rows.length < 2 || rows.every(e => e.status === 'na')){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    wrap.querySelector('.pe-trend-strip').innerHTML = rows.map((e, k) =>
+      `<span class="pe-trend-cell ${e.status}${k === rows.length - 1 ? ' last' : ''}" title="Lectura ${k + 1}: ${PE_STATUS_LABEL[e.status]}"></span>`).join('');
+    const nDet = rows.filter(e => e.status === 'detected').length;
+    wrap.querySelector('.pe-trend-label').textContent = nDet ? `${nDet} de ${rows.length} con evidencia` : `${rows.length} lecturas`;
+  });
+}
+
+// Los eventos también gobiernan la cabecera y el diagnóstico inteligente: un semáforo de consumo "normal"
+// no debe ocultar, por ejemplo, un voltaje colapsado. Se aplica después de que recompute() escribe ambos textos.
+function peShort(e){
+  if(e.key === 'volt') return (e.kinds || []).map(k => k === 'over' ? 'sobretensión' : 'subtensión').join(' y ');
+  return {interr:'interrupción de suministro', freq:'frecuencia fuera de rango', thd:'distorsión armónica',
+          flicker:'flicker', fp:'bajo factor de potencia'}[e.key];
+}
+// Se ejecuta en cada movimiento (render inmediato) y en cada recompute; es idempotente: siempre parte del estado base
+// de la clase de consumo y encima aplica lo que digan los eventos, así que al resolverse el evento todo vuelve solo.
+function peApplyToPanel(meta){
+  meta = meta || (lastResult && CLASS_META[lastResult.predicted]);
+  if(!meta) return;
+  const detected = lastPowerEvents.filter(e => e.status === 'detected');
+  const $ = id => document.getElementById(id);
+  const dot = $('semaforo-dot'), st = $('status-text');
+  const kv = $('kpi-voltage'), kvs = $('kpi-voltage-sub'), kf = $('kpi-cosphi'), kfs = $('kpi-cosphi-sub');
+  const old = $('pe-diag-note'); if(old) old.remove();
+  // base
+  const setDot = c => { dot.style.background = c; dot.style.setProperty('--dot-ring', c + '33'); dot.style.setProperty('--dot-glow', c + '99'); };
+  setDot(meta.colorHex);
+  st.textContent = meta.statusText; st.style.color = meta.colorHex;
+  $('status-sub').textContent = meta.statusSub;
+  kv.style.color = ''; kvs.textContent = 'Fase-neutro'; kvs.style.color = '';
+  kf.style.color = ''; kfs.textContent = 'Cos φ total'; kfs.style.color = '';
+  if(!detected.length) return;
+
+  // cabecera y semáforo
+  const RED = '#F0523E';
+  const n = detected.length;
+  setDot(RED);
+  st.textContent = 'Calidad de energía: EVENTO DETECTADO — ' + detected.map(peShort).join(', ');
+  st.style.color = RED;
+  $('status-sub').textContent = `${meta.label} · ${n} evento${n === 1 ? '' : 's'} de calidad de energía con evidencia`;
+
+  // KPI de voltaje: color y fase afectada
+  const volt = detected.find(e => e.key === 'volt'), interr = detected.find(e => e.key === 'interr');
+  if(volt || interr){
+    const onlyUnder = !interr && volt && !(volt.kinds || []).includes('over');
+    const c = onlyUnder ? '#F5A623' : RED;
+    kv.style.color = c; kvs.style.color = c;
+    const allBad = [].concat(volt ? volt.reads : [], interr ? interr.reads.filter(r => r.state === 'collapse') : []).filter(r => r.state !== 'ok');
+    kvs.textContent = allBad.map(r => `${r.tag} ${r.label.replace('Fase ', 'F.')}`).join(' · ') || 'Evento de tensión';
+  }
+  const fpEv = detected.find(e => e.key === 'fp');
+  if(fpEv){ kf.style.color = RED; kfs.style.color = RED; kfs.textContent = '▼ Por debajo de 0.85'; }
+
+  // diagnóstico inteligente
+  const note = document.createElement('div');
+  note.id = 'pe-diag-note'; note.style.marginTop = '10px';
+  note.innerHTML = `<b>Atención en calidad de energía:</b> más allá de la clasificación de consumo, hay evidencia de ${detected.map(e => e.name).join(', ')}. Revisa la tarjeta «Eventos de calidad de energía».`;
+  $('diag-text').appendChild(note);
+}
+
+// Variables que alimentan los eventos pero que el árbol no usa (por ejemplo el voltaje de la fase C):
+// se ofrecen como controles para poder simular esos escenarios desde el punto 3.
+function peExtraFeats(){
+  const used = new Set(TREE.used_features);
+  const need = PE_VOLT_FEATS.concat([PE_FP_FEAT], peKeyFeats('freq'), peKeyFeats('thd'), peKeyFeats('flicker'));
+  return [...new Set(need)].filter(f => TREE.feature_stats[f] && !used.has(f));
+}
+
+const PE_ICON = {volt:'🔺', interr:'🚨', freq:'🎚️', thd:'🌊', flicker:'💡', fp:'🎯'};
+const PE_LIVE_REC = {
+  interr:  'Voltaje colapsado en una o más fases: revisar si hubo disparo de protecciones o pérdida de fase, y confirmarlo con el registro de eventos del medidor (aquí solo se ve la caída de tensión, no su duración).',
+  freq:    'Frecuencia fuera de ±1% de la nominal: revisar la fuente de alimentación (red o generación).',
+  thd:     'THD de tensión por encima del 8%: identificar cargas no lineales (variadores, rectificadores) y evaluar filtros armónicos.',
+  flicker: 'Flicker por encima del límite: revisar cargas fluctuantes o de arranque frecuente (motores, hornos, soldadoras).',
+  fp:      'Factor de potencia por debajo de 0.85: evaluar compensación reactiva (banco de capacitores) para reducir pérdidas y penalizaciones.'
+};
+const PE_HIST_ADVICE = {
+  volt:    'conviene medir en campo y revisar la regulación de tensión de las fases afectadas.',
+  interr:  'conviene confirmarlo con el registro de eventos del medidor: aquí solo se ve la caída de tensión, no su duración.',
+  freq:    'revisar la fuente de alimentación (red o generación).',
+  thd:     'identificar cargas no lineales y evaluar filtros armónicos.',
+  flicker: 'revisar cargas fluctuantes o de arranque frecuente.',
+  fp:      'evaluar compensación reactiva (banco de capacitores).'
+};
+// Recomendaciones en vivo: una por cada evento con evidencia en la lectura actual.
+function peRecommendations(events){
+  const recs = [];
+  events.filter(e => e.status === 'detected').forEach(e => {
+    if(e.key === 'volt'){
+      if((e.kinds || []).includes('over')) recs.push({icon:'🔺', text:`Posible sobretensión en ${e.overNames}: verificar el ajuste del regulador o el tap del transformador y proteger los equipos sensibles.`});
+      if((e.kinds || []).includes('under')) recs.push({icon:'🔻', text:`Posible subtensión en ${e.underNames}: revisar caídas de tensión en el alimentador, conexiones flojas y la carga de esa fase.`});
+    } else if(e.key === 'interr'){
+      recs.push({icon:PE_ICON.interr, text:`Voltaje colapsado en ${e.phaseNames}: revisar si hubo disparo de protecciones o pérdida de fase, y confirmarlo con el registro de eventos del medidor (aquí solo se ve la caída de tensión, no su duración).`});
+    } else {
+      recs.push({icon:PE_ICON[e.key], text:PE_LIVE_REC[e.key]});
+    }
+  });
+  return recs;
+}
+const peLec = n => n === 1 ? '1 lectura' : n + ' lecturas';
+
+// Versión agregada para el diagnóstico histórico: aplica las mismas reglas a cada lectura del historial.
+function buildHistoricalPowerEvents(){
+  const total = history.length;
+  const lec = n => n === 1 ? '1 lectura' : n + ' lecturas';
+  const enLas = n => n === 1 ? 'la única lectura evaluada' : 'las ' + n + ' lecturas evaluadas';
+  const pl = (n, sing, plur) => n === 1 ? sing : plur;
+  const acc = {};
+  PE_DEFS.forEach(d => { acc[d.key] = {evaluated: 0, detected: 0, over: 0, under: 0}; });
+  history.forEach(h => {
+    peEventsOf(h.values).forEach(e => {
+      const a = acc[e.key];
+      if(e.status !== 'na') a.evaluated++;
+      if(e.status === 'detected'){
+        a.detected++;
+        (e.kinds || []).forEach(k => { a[k]++; });
+      }
+    });
+  });
+  return PE_DEFS.map(d => {
+    const a = acc[d.key];
+    const p = a.evaluated ? (a.detected / a.evaluated * 100).toFixed(1) : '0.0';
+    const nEx = total - a.evaluated;
+    const excluded = (a.evaluated > 0 && nEx > 0) ? ` Se ${nEx === 1 ? 'excluyó 1 lectura' : 'excluyeron ' + nEx + ' lecturas'} sin valor válido.` : '';
+    let status, text;
+    if(a.evaluated === 0){
+      status = 'na';
+      text = peKeyFeats(d.key).length
+        ? `${total === 1 ? 'La única lectura del historial no tiene' : 'Ninguna de las ' + total + ' lecturas del historial tiene'} un valor válido para esta categoría (ausente o fuera del rango físico, probable código de error del sensor) — no se puede evaluar.`
+        : peMissingText(d.key);
+    } else if(a.detected === 0){
+      status = 'none';
+      const none = {
+        volt:    `En ${enLas(a.evaluated)}, los voltajes se mantuvieron dentro de ±10% de su promedio histórico — sin evidencia de sobretensión ni subtensión en el historial.`,
+        freq:    `En ${enLas(a.evaluated)}, la frecuencia se mantuvo dentro de ±1% de la nominal — sin evidencia de este evento en el historial.`,
+        thd:     `En ${enLas(a.evaluated)}, el THD de tensión se mantuvo por debajo del 8% — sin evidencia de este evento en el historial.`,
+        flicker: `En ${enLas(a.evaluated)}, Pst/Plt se mantuvo por debajo de 1.0 — sin evidencia de este evento en el historial.`,
+        interr:  `En ${enLas(a.evaluated)}, ningún voltaje cayó por debajo del 10 % de su valor histórico — sin evidencia de interrupción de suministro. ${PE_INTERR_NOTE}`,
+        fp:      `En ${a.evaluated === 1 ? 'la única lectura con factor de potencia válido' : 'las ' + a.evaluated + ' lecturas con factor de potencia válido'}, el valor se mantuvo dentro de lo aceptable (≥0.85) — sin evidencia de este evento en el historial.`
+      };
+      text = none[d.key] + excluded;
+    } else {
+      status = 'detected';
+      const det = {
+        volt:    `${a.detected} de ${lec(a.evaluated)} (${p}%) ${pl(a.detected, 'salió', 'salieron')} de ±10% de su promedio histórico: ${a.over} con posible sobretensión y ${a.under} con posible subtensión.`,
+        freq:    `${a.detected} de ${lec(a.evaluated)} (${p}%) ${pl(a.detected, 'se desvió', 'se desviaron')} más de ±1% de la frecuencia nominal.`,
+        thd:     `${a.detected} de ${lec(a.evaluated)} (${p}%) ${pl(a.detected, 'superó', 'superaron')} el 8% de THD de tensión.`,
+        flicker: `${a.detected} de ${lec(a.evaluated)} (${p}%) ${pl(a.detected, 'superó', 'superaron')} el límite de 1.0 de Pst/Plt.`,
+        interr:  `${a.detected} de ${lec(a.evaluated)} (${p}%) ${pl(a.detected, 'tuvo', 'tuvieron')} al menos una fase por debajo del 10 % de su valor histórico — evidencia de interrupción de suministro. ${PE_INTERR_NOTE}`,
+        fp:      `${a.detected} de ${lec(a.evaluated)} con factor de potencia válido (${p}%) ${pl(a.detected, 'estuvo', 'estuvieron')} por debajo de 0.85.`
+      };
+      text = det[d.key] + excluded;
+    }
+    return {key: d.key, name: d.name, status, text, evaluated: a.evaluated, detected: a.detected};
+  });
 }
 
 /* ---------------- HISTORICAL DIAGNOSIS (síntesis de TODAS las lecturas evaluadas) ---------------- */
@@ -1272,7 +2208,9 @@ function buildHistoricalDiagnosis(){
   const badV = vImb.filter(x=>x>2).length;
   const badC = cImb.filter(x=>x>20).length;
   const badFp = fps.filter(x=>x<0.85).length;
-  const pqIssues = badV + badC + badFp;
+  // Lecturas con eventos de tensión/frecuencia/armónicos/flicker (el factor de potencia ya está en badFp)
+  const badEv = history.filter(h => h.values && peEventsOf(h.values).some(e => e.status === 'detected' && e.key !== 'fp')).length;
+  const pqIssues = badV + badC + badFp + badEv;
 
   let pqVerdict, pqColor, pqText;
   if(vImb.length===0 && cImb.length===0 && fps.length===0){
@@ -1280,7 +2218,7 @@ function buildHistoricalDiagnosis(){
     pqText = 'No fue posible evaluar la calidad de energía del historial porque el archivo no incluye las variables necesarias: voltaje trifásico, corriente trifásica o factor de potencia.';
   } else if(pqIssues > 0){
     pqVerdict = 'DEFICIENTE EN ALGUNOS MOMENTOS'; pqColor = '#F0523E';
-    pqText = `De las ${total} lecturas del historial, <b>${pqIssues}</b> tuvieron al menos un valor fuera del rango recomendado (en voltaje, corriente o factor de potencia). Conviene identificar esos momentos puntuales y revisarlos.`;
+    pqText = `De las ${total} lecturas del historial, <b>${pqIssues}</b> tuvieron al menos un valor fuera del rango recomendado (en voltaje, corriente, factor de potencia o eventos de calidad de energía como sobretensiones e interrupciones). Conviene identificar esos momentos puntuales y revisarlos.`;
   } else {
     pqVerdict = 'BUENA EN TODO EL HISTORIAL'; pqColor = '#2ECC71';
     pqText = `Ninguna de las ${total} lecturas del historial se salió de los rangos recomendados de voltaje, corriente o factor de potencia — la calidad de energía se mantuvo buena durante todo el periodo evaluado.`;
@@ -1312,9 +2250,11 @@ function buildHistoricalDiagnosis(){
   // solo a la lectura actual), estas pesan por FRECUENCIA a lo largo de todo el
   // historial — una variable que aparece en muchas lecturas es un patrón recurrente,
   // no un caso aislado, y así se lo dice al usuario.
+  const powerEvents = buildHistoricalPowerEvents();
+  const evDetected = powerEvents.filter(e => e.status === 'detected');
   const historicalRecommendations = [];
   if(counts.medium === 0 && counts.high === 0){
-    historicalRecommendations.push({icon:'✅', text:`Durante las ${total} lecturas evaluadas, el consumo se mantuvo normal en todo momento. No se requiere ninguna acción — continuar con el monitoreo estándar.`});
+    historicalRecommendations.push({icon:'✅', text:`Durante las ${total} lecturas evaluadas, el consumo se mantuvo normal en todo momento. ${evDetected.length ? 'Aun así, revisa los eventos de calidad de energía detectados más abajo.' : 'No se requiere ninguna acción — continuar con el monitoreo estándar.'}`});
   } else {
     const freqText = (feat) => featureFreq[feat] ? `${featureFreq[feat]} de ${total} lecturas (${(featureFreq[feat]/total*100).toFixed(0)}%)` : null;
 
@@ -1342,7 +2282,7 @@ function buildHistoricalDiagnosis(){
       historicalRecommendations.push({icon:'👍', text:'La tendencia reciente es a la baja — cualquier acción correctiva que se haya tomado parece estar funcionando; mantenerla y seguir monitoreando.'});
     }
     if(pqIssues > 0){
-      historicalRecommendations.push({icon:'🛠️', text:`Se detectaron ${pqIssues} casos de calidad de energía fuera de rango a lo largo del historial (voltaje, corriente o factor de potencia) — programar una inspección técnica si el patrón continúa en próximas lecturas.`});
+      historicalRecommendations.push({icon:'🛠️', text:`Se detectaron ${pqIssues} casos de calidad de energía fuera de rango a lo largo del historial (voltaje, corriente, factor de potencia o eventos de calidad de energía) — programar una inspección técnica si el patrón continúa en próximas lecturas.`});
     }
     if(relCounts.baja > 0){
       historicalRecommendations.push({icon:'⚠️', text:`${relCounts.baja} lectura(s) del historial tienen confiabilidad baja (casos poco frecuentes en el entrenamiento) — no tomar decisiones basadas solo en esos casos puntuales; confirmarlos con otra fuente antes de actuar.`});
@@ -1354,10 +2294,17 @@ function buildHistoricalDiagnosis(){
     }
   }
 
+  // Eventos de calidad de energía: ponderados por frecuencia, igual que el resto de recomendaciones históricas.
+  evDetected.forEach(e => {
+    const p = (e.detected / e.evaluated * 100).toFixed(0);
+    historicalRecommendations.push({icon: PE_ICON[e.key], text: `${e.name}: hubo evidencia en ${e.detected} de ${peLec(e.evaluated)} (${p}%) — ${PE_HIST_ADVICE[e.key]}`});
+  });
+
   return {
     available: true, total, counts, pctLow, pctMedium, pctHigh, topFeatures, trendText,
     verdict, verdictColor, verdictMeaning, riesgoLabel, diagnosisText,
     pq: {verdict: pqVerdict, color: pqColor, text: pqText},
+    powerEvents,
     recommendations: historicalRecommendations,
     reliability: {counts: relCounts, avgPct: relAvgPct, text: reliabilityText}
   };
@@ -1719,6 +2666,11 @@ function buildConfidence(result){
 
 
 /* ---------------- MAIN RECOMPUTE ---------------- */
+// El historial NO guarda cada movimiento: solo cuando cambia la clasificación o el estado de un evento de calidad.
+function histFootnoteText(){
+  const base = `El sistema recorre el árbol de decisión entrenado (${TREE.depth} niveles de profundidad, ${TREE.n_leaves} posibles conclusiones) con cada lectura, pero solo registra una aquí cuando cambia la clasificación o el estado de algún evento de calidad de energía (en uso manual se conservan las últimas 24).`;
+  return historyFromFile ? base + ' Si cargas un archivo, el historial parte de sus filas, en el orden del archivo (hasta 2.000).' : base;
+}
 function recompute(opts){
   opts = opts || {};
   const result = traverseTree(currentValues);
@@ -1737,7 +2689,7 @@ function recompute(opts){
   document.getElementById('meta-nodes').textContent = TREE.depth + ' niveles de profundidad, ' + TREE.n_leaves + ' posibles conclusiones distintas';
   const histFootnote = document.getElementById('hist-footnote');
   if(histFootnote){
-    histFootnote.textContent = `Cada vez que mueves un control, el sistema recorre el árbol de decisión entrenado (${TREE.depth} niveles de profundidad, ${TREE.n_leaves} posibles conclusiones) y agrega el resultado a este historial.`;
+    histFootnote.textContent = histFootnoteText();
   }
 
   document.getElementById('indicador').textContent = meta.label;
@@ -1764,7 +2716,12 @@ function recompute(opts){
   buildKPIs(meta);
   buildPathViz(result, meta);
   buildQualityIndices();
-  pushValueHistory(cls);
+  renderPowerEvents();
+  const peChanged = pePending; pePending = false;
+  peApplyToPanel(meta);
+  if(!opts.skipValuePush) pushValueHistory(cls);   // tras subir un archivo la ventana ya termina en la lectura actual
+  renderPowerEventTrend();
+  renderPowerIndicators();
   buildKPISparklines();
   buildTrendChart();
   buildConfidence(result);
@@ -1824,7 +2781,7 @@ function recompute(opts){
   });
 
   if(!opts.skipHistoryAppend){
-    if(cls !== lastClass){
+    if(cls !== lastClass || peChanged){
       history.push({cls, ts: new Date(), path: result.path, values: {...currentValues}});
       if(history.length > 24) history.shift();
     } else if(history.length === 0){
@@ -1848,9 +2805,12 @@ function renderHistory(){
     for(let i=0; i<MAX_BARS; i++) sampled.push(shown[Math.floor(i*step)]);
     shown = sampled;
   }
+  let evBars = 0;
   shown.forEach(h=>{
     const bar = document.createElement('div');
     bar.className = 'hist-bar';
+    const evs = h.values ? peEventsOf(h.values).filter(e => e.status === 'detected') : [];
+    if(evs.length){ bar.classList.add('has-event'); bar.title = 'Eventos de calidad de energía: ' + evs.map(e => e.name).join(', '); evBars++; }
     const level = order[h.cls];
     bar.style.height = (30 + level*35) + '%';
     bar.style.background = CLASS_META[h.cls].colorHex;
@@ -1858,9 +2818,8 @@ function renderHistory(){
   });
   const note = document.getElementById('hist-sample-note');
   if(note){
-    note.textContent = history.length > MAX_BARS
-      ? `Mostrando ${MAX_BARS} muestras representativas de ${history.length} lecturas.`
-      : '';
+    const sampled = history.length > MAX_BARS ? `Mostrando ${MAX_BARS} muestras representativas de ${history.length} lecturas. ` : '';
+    note.textContent = sampled + (evBars ? `Borde rojo = lectura con eventos de calidad de energía (${evBars}).` : '');
   }
 }
 
@@ -1949,15 +2908,26 @@ document.getElementById('btn-historico').addEventListener('click', ()=>{
   }
   const counts = {low:0, medium:0, high:0};
   history.forEach(h=>counts[h.cls]++);
+  const detectedOf = h => h.values ? peEventsOf(h.values).filter(e => e.status === 'detected') : [];
+  const withEvents = history.filter(h => detectedOf(h).length).length;
+  // Con un archivo cargado la hora sería la de la carga para todas las filas: se muestra el número de fila del archivo.
+  const when = h => h.fileRow ? `Fila ${h.fileRow.toLocaleString('es-CO')}` : h.ts.toLocaleTimeString('es-CO');
+  const hasFileRows = history.some(h => h.fileRow);
   let rows = history.slice().reverse().map(h=>{
     const meta = CLASS_META[h.cls];
-    return `<tr><td>${h.ts.toLocaleTimeString('es-CO')}</td><td style="color:${meta.colorHex}; font-weight:600;">${meta.label}</td><td>${h.path.length} condiciones evaluadas</td></tr>`;
+    const ev = detectedOf(h);
+    const evCell = ev.length ? `<td style="color:var(--red); font-weight:600;">${ev.map(peShort).join(', ')}</td>` : '<td style="color:var(--ink-dim);">—</td>';
+    return `<tr><td>${when(h)}</td><td style="color:${meta.colorHex}; font-weight:600;">${meta.label}</td><td>${h.path.length} condiciones evaluadas</td>${evCell}</tr>`;
   }).join('');
+  const sampledNote = history.length > 120
+    ? `<p style="color:#8C9AB5; font-size:12px; margin:0 0 8px 0;">Las barras del panel muestran 120 muestras representativas; esta tabla y la dona cuentan las ${history.length.toLocaleString('es-CO')} lecturas.</p>` : '';
   const body = `
     <h4>Distribución de clasificaciones en esta sesión</h4>
-    <p>Bajo: <b>${counts.low}</b> · Medio: <b>${counts.medium}</b> · Alto: <b>${counts.high}</b> (de un total de ${history.length} lecturas registradas)</p>
+    <p>Bajo: <b>${counts.low}</b> · Medio: <b>${counts.medium}</b> · Alto: <b>${counts.high}</b> (de un total de ${history.length.toLocaleString('es-CO')} lecturas registradas)</p>
+    <p>Lecturas con eventos de calidad de energía: <b>${withEvents}</b> de ${history.length.toLocaleString('es-CO')}</p>
     <h4>Lecturas registradas (la más reciente primero)</h4>
-    <table><tr><th>Hora</th><th>Clasificación</th><th>Condiciones evaluadas</th></tr>${rows}</table>
+    ${sampledNote}
+    <table><tr><th>${hasFileRows ? 'Hora o fila del archivo' : 'Hora'}</th><th>Clasificación</th><th>Condiciones evaluadas</th><th>Eventos de calidad</th></tr>${rows}</table>
   `;
   openModal('Comparación con el histórico de la sesión', body);
 });
@@ -1989,6 +2959,13 @@ function generateCurrentReportText(){
   lines.push('Calidad de energía (lectura actual): ' + pq.verdict + ' — ' + pq.verdictText);
   pq.details.forEach(d => lines.push('  - ' + d.text.replace(/<\/?b>/g,'')));
   lines.push('');
+  const peNow = evaluatePowerEvents(currentValues);
+  lines.push('Eventos de calidad de energía (lectura actual): ' + peSummaryText(peNow));
+  peNow.forEach(e => lines.push('  - ' + e.name + ' — ' + PE_STATUS_LABEL[e.status].toUpperCase() + ': ' + e.text));
+  lines.push('');
+  lines.push('Indicadores indirectos (no son mediciones normalizadas ni cuentan como evidencia de evento):');
+  peIndText(peIndicators('live')).forEach(l => lines.push(l));
+  lines.push('');
   lines.push('Recomendaciones:');
   buildRecommendations(r.predicted, r.path).forEach(rec => lines.push('  - ' + rec.text));
   return lines.join('\n');
@@ -2015,6 +2992,12 @@ function generateHistoricalReportText(){
   lines.push('Tendencia: ' + d.trendText.replace(/<\/?b>/g,''));
   lines.push('');
   lines.push('Calidad de energía agregada: ' + d.pq.verdict + ' — ' + d.pq.text.replace(/<\/?b>/g,''));
+  lines.push('');
+  lines.push('Eventos de calidad de energía (todo el historial): ' + peSummaryText(d.powerEvents));
+  d.powerEvents.forEach(e => lines.push('  - ' + e.name + ' — ' + PE_STATUS_LABEL[e.status].toUpperCase() + ': ' + e.text));
+  lines.push('');
+  lines.push('Indicadores indirectos (no son mediciones normalizadas ni cuentan como evidencia de evento):');
+  peIndText(peIndicators('history')).forEach(l => lines.push(l));
   lines.push('');
   lines.push(`Confiabilidad de las clasificaciones: Alta ${d.reliability.counts.alta} · Moderada ${d.reliability.counts.moderada} · Baja ${d.reliability.counts.baja}`);
   lines.push(d.reliability.text.replace(/<\/?b>/g,''));
@@ -2081,6 +3064,13 @@ document.getElementById('btn-historico-diag').addEventListener('click', ()=>{
     <h4>Calidad de energía agregada</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Voltaje, corriente y factor de potencia, evaluados en conjunto para todas las lecturas del historial.</p>
     <p>Veredicto: <b style="color:${d.pq.color}">${d.pq.verdict}</b> — ${d.pq.text}</p>
+    <h4>Eventos de calidad de energía</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Las 6 categorías clásicas, evaluadas en todas las lecturas del historial y solo con las variables que el dataset entrenado realmente contiene.</p>
+    <p style="margin:0 0 10px 0;">${peSummaryText(d.powerEvents)}</p>
+    ${peListHtml(d.powerEvents, true)}
+    <h4>Indicadores indirectos</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 8px 0;">Estimaciones a partir de las variables disponibles; no son mediciones normalizadas.</p>
+    ${peIndCardsHtml(peIndicators('history'), {single:true})}
     <h4>Confiabilidad de las clasificaciones</h4>
     <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">¿Qué tan respaldadas por el entrenamiento están las clasificaciones de todo el historial?</p>
     <p>Alta: <b>${d.reliability.counts.alta}</b> · Moderada: <b>${d.reliability.counts.moderada}</b> · Baja: <b>${d.reliability.counts.baja}</b> — ${d.reliability.text}</p>
@@ -2106,12 +3096,35 @@ document.getElementById('btn-calidad').addEventListener('click', ()=>{
   openModal('Diagnóstico de calidad de la energía', body);
 });
 
+document.getElementById('btn-eventos').addEventListener('click', ()=>{
+  const ev = evaluatePowerEvents(currentValues);
+  const rows = PE_DEFS.map(d => `<tr><td>${d.name}</td><td>${d.rule}</td><td>${peKeyFeats(d.key).length ? 'Sí' : 'No'}</td></tr>`).join('');
+  const body = `
+    <h4>Resultado para la lectura actual</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Las 6 categorías clásicas de eventos de calidad de energía, evaluadas solo con las variables que el dataset entrenado realmente contiene.</p>
+    <p style="font-weight:600; margin:0 0 10px 0;">${peSummaryText(ev)}</p>
+    ${peListHtml(ev, true)}
+    <h4>Indicadores indirectos (no son mediciones)</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 8px 0;">Cubren lo que el dataset no mide directamente. No cuentan como evidencia de evento.</p>
+    ${peIndCardsHtml(peIndicators('live'), {single:true})}
+    <h4>Cómo se obtiene cada indicador y qué limitaciones tiene</h4>
+    ${PE_IND_METHOD_HTML}
+    <h4>Interrupciones de suministro: qué mide y qué no</h4>
+    ${PE_INTERR_EXPLAIN_HTML}
+    <h4>Criterio que se aplica en cada categoría</h4>
+    <table><tr><th>Categoría</th><th>Se marca con evidencia cuando…</th><th>¿Variable en el dataset?</th></tr>${rows}</table>
+    <p style="margin-top:12px; color:#8C9AB5; font-size:12px;">"Sin evidencia" no significa que el evento no pueda ocurrir: significa que las variables disponibles no lo muestran. "No evaluable" indica que el archivo con el que se entrenó el árbol no incluye la variable necesaria. Los promedios históricos provienen de ese mismo archivo, y este análisis es independiente de la clasificación de consumo (bajo/medio/alto).</p>
+  `;
+  openModal('Eventos de calidad de energía', body);
+});
+
 document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
   const r = lastResult; const meta = CLASS_META[r.predicted];
   const steps = r.path.map(explainStep).map(s=>`<li>${s}</li>`).join('');
   const recs = buildRecommendations(r.predicted, r.path).map(x=>`<li>${x.icon} ${x.text}</li>`).join('');
   const pq = buildPowerQualityDiagnosis();
   const pqRows = pq.details.map(d => `<li>${d.icon} ${d.text}</li>`).join('');
+  const peEvents = evaluatePowerEvents(currentValues);
   const body = `
     <h4>Resultado y nivel de riesgo</h4>
     <p>Clasificación: <b style="color:${meta.colorHex}">${meta.label}</b> · Nivel de riesgo: <b style="color:${meta.colorHex}">${meta.riesgo}</b></p>
@@ -2123,6 +3136,13 @@ document.getElementById('btn-diagnostico').addEventListener('click', ()=>{
     <h4>Calidad de la energía (voltaje, corriente y factor de potencia)</h4>
     <p>Veredicto: <b style="color:${pq.verdictColor}">${pq.verdict}</b> — ${pq.verdictText}</p>
     <ul style="list-style:none; margin:0 0 4px 0; padding:0; line-height:1.9;">${pqRows}</ul>
+    <h4>Eventos de calidad de energía</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 6px 0;">Las 6 categorías clásicas, evaluadas para esta lectura solo con las variables que el dataset entrenado realmente contiene.</p>
+    <p style="margin:0 0 10px 0;">${peSummaryText(peEvents)}</p>
+    ${peListHtml(peEvents, true)}
+    <h4>Indicadores indirectos</h4>
+    <p style="color:#8C9AB5; font-size:12px; margin:0 0 8px 0;">Estimaciones a partir de las variables disponibles; no son mediciones normalizadas.</p>
+    ${peIndCardsHtml(peIndicators('live'), {single:true})}
     <h4>Recomendaciones según este resultado</h4>
     <ol>${recs}</ol>
   `;
@@ -2387,11 +3407,12 @@ function applyTrainedModel(result){
     if(!LABELS[f]) LABELS[f] = {name: f, unit: ''};
   });
 
-  let newHistory = result.records.map(r => {
+  let newHistory = result.records.map((r, i) => {
     const res = traverseTree(r.values);
-    return {cls: res.predicted, ts: new Date(), path: res.path, values: r.values};
+    return {cls: res.predicted, ts: new Date(), path: res.path, values: r.values, fileRow: i + 1};
   });
 
+  const fullHistoryRows = newHistory;   // sin muestrear
   let truncatedNote = '';
   if(newHistory.length > MAX_HISTORY_ROWS){
     const step = newHistory.length / MAX_HISTORY_ROWS;
@@ -2401,12 +3422,16 @@ function applyTrainedModel(result){
     newHistory = sampled;
   }
 
+  // Todas las filas, en el orden del archivo: el muestreo de abajo solo sirve para no saturar el DOM, pero rompe la
+  // condición de "registros consecutivos" que necesita el índice de fluctuación de tensión.
+  historyFluct = peFluctCompute(fullHistoryRows.map(h => h.values));
   history = newHistory;
-  // La tendencia de sesión se reinicia con las últimas lecturas del archivo recién entrenado,
+  historyFromFile = true;
+  // La tendencia de sesión se reinicia con las últimas lecturas REALES (consecutivas) del archivo recién entrenado,
   // en vez de arrastrar puntos calculados con el árbol/dataset anterior.
-  valueHistory = newHistory.slice(-30).map(h => ({ ts: h.ts, cls: h.cls, values: h.values }));
-  const last = newHistory[newHistory.length - 1];
-  const prevLast = newHistory.length > 1 ? newHistory[newHistory.length - 2].cls : null;
+  valueHistory = fullHistoryRows.slice(-30).map(h => ({ ts: h.ts, cls: h.cls, values: h.values }));
+  const last = fullHistoryRows[fullHistoryRows.length - 1];
+  const prevLast = fullHistoryRows.length > 1 ? fullHistoryRows[fullHistoryRows.length - 2].cls : null;
   currentValues = {...last.values};
   TREE.feature_order.forEach(feat=>{
     if(currentValues[feat] === undefined) currentValues[feat] = TREE.feature_stats[feat].mean;
@@ -2415,7 +3440,7 @@ function applyTrainedModel(result){
 
   buildSliders();
   document.querySelectorAll('.demo-select button').forEach(b => b.classList.remove('active'));
-  recompute({skipHistoryAppend: true});
+  recompute({skipHistoryAppend: true, skipValuePush: true});
 
   document.getElementById('meta-training-rows').textContent =
     result.n_rows_used.toLocaleString('es-CO') + ' registros de entrenamiento (archivo subido)';
